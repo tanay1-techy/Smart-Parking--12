@@ -1,396 +1,376 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SlipAds — Your Brand On Every Bottle</title>
-  <meta name="description" content="SlipAds prints stunning advertisements on water bottle slips. Customize your brand's bottle slip in 3D, choose colors, upload logos, and order in bulk." />
-  <meta property="og:title" content="SlipAds — Your Brand On Every Bottle" />
-  <meta property="og:description" content="Premium water bottle slip advertising. Design, print, deliver." />
-  <meta property="og:type" content="website" />
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="/style.css" />
-</head>
-<body>
-  <!-- Scroll Progress Bar -->
-  <div class="scroll-progress" id="scrollProgress"></div>
-
-  <!-- Navigation -->
-  <nav class="navbar" id="navbar">
-    <div class="nav-container">
-      <a href="#" class="nav-logo">
-        <span class="logo-icon">💧</span>
-        <span class="logo-text">Slip<span class="logo-accent">Ads</span></span>
-      </a>
-      <ul class="nav-links">
-        <li><a href="#hero">Home</a></li>
-        <li><a href="#customizer">Customizer</a></li>
-        <li><a href="#how-it-works">How It Works</a></li>
-        <li><a href="#pricing">Pricing</a></li>
-        <li><a href="#bulk-order">Order</a></li>
-      </ul>
-      <a href="#customizer" class="nav-cta">Try It Free</a>
-    </div>
-  </nav>
-
-  <!-- ========== SECTION 1: HERO ========== -->
-  <section class="hero" id="hero">
-    <div class="hero-bg-effects">
-      <div class="hero-orb hero-orb-1"></div>
-      <div class="hero-orb hero-orb-2"></div>
-      <div class="hero-orb hero-orb-3"></div>
-      <div class="hero-grid-overlay"></div>
-    </div>
-    <div class="hero-content">
-      <div class="hero-text">
-        <div class="hero-badge" id="heroBadge">
-          <span class="badge-dot"></span>
-          Now Accepting Orders
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Smart Parking Dashboard</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="/style.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Material Icons (for UI icons) -->
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons+Outlined" rel="stylesheet">
+  </head>
+  <body>
+    <div id="app" class="layout-wrapper">
+      
+      <!-- Sidebar -->
+      <aside class="sidebar">
+        <div class="sidebar-header">
+          <div class="logo-container">
+            <div class="logo-main">
+              <span class="material-icons-outlined p-icon">local_parking</span>
+              <div class="logo-wifi">
+                <span></span><span></span><span></span>
+              </div>
+              <span class="material-icons-outlined car-icon">directions_car</span>
+            </div>
+            <h1>SMART<br><span class="highlight">PARKING SYSTEM</span></h1>
+            <p class="tagline">PARK SMART, SAVE TIME</p>
+          </div>
         </div>
-        <h1 class="hero-title" id="heroTitle">
-          <span class="title-line">YOUR BRAND.</span>
-          <span class="title-line title-accent">ON EVERY BOTTLE.</span>
-        </h1>
-        <p class="hero-subtitle" id="heroSubtitle">
-          Transform ordinary water bottles into powerful advertising. 
-          Design your custom slip in 3D, see it in real-time, and order at scale.
-        </p>
-        <div class="hero-actions" id="heroActions">
-          <a href="#customizer" class="btn btn-primary btn-glow">
-            <span>Start Designing</span>
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
+        
+        <nav class="sidebar-nav">
+          <a href="#dashboard" class="nav-item active">
+            <span class="material-icons-outlined">dashboard</span>
+            Dashboard
           </a>
-          <a href="#how-it-works" class="btn btn-ghost">
-            See How It Works
+          <a href="#slots" class="nav-item">
+            <span class="material-icons-outlined">local_parking</span>
+            Parking Slots
+          </a>
+          <a href="#reservations" class="nav-item">
+            <span class="material-icons-outlined">event_note</span>
+            Reservations
+          </a>
+          <a href="#payments" class="nav-item">
+            <span class="material-icons-outlined">payment</span>
+            Payments
+          </a>
+          <a href="#users" class="nav-item">
+            <span class="material-icons-outlined">group</span>
+            Users
+          </a>
+          <a href="#reports" class="nav-item">
+            <span class="material-icons-outlined">bar_chart</span>
+            Reports
+          </a>
+          <a href="#settings" class="nav-item">
+            <span class="material-icons-outlined">settings</span>
+            Settings
+          </a>
+        </nav>
+
+        <div class="sidebar-footer">
+          <a href="#" class="nav-item">
+            <span class="material-icons-outlined">logout</span>
+            Log Out
           </a>
         </div>
-        <div class="hero-stats" id="heroStats">
-          <div class="stat">
-            <span class="stat-number">50K+</span>
-            <span class="stat-label">Bottles Printed</span>
-          </div>
-          <div class="stat-divider"></div>
-          <div class="stat">
-            <span class="stat-number">200+</span>
-            <span class="stat-label">Brands Trust Us</span>
-          </div>
-          <div class="stat-divider"></div>
-          <div class="stat">
-            <span class="stat-number">4.9★</span>
-            <span class="stat-label">Customer Rating</span>
-          </div>
-        </div>
-      </div>
-      <div class="hero-visual" id="heroVisual">
-        <div class="hero-bottle-container" id="heroBottleContainer"></div>
-      </div>
-    </div>
-    <div class="scroll-indicator" id="scrollIndicator">
-      <span>Scroll to explore</span>
-      <div class="scroll-arrow">
-        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 5v14"/><path d="m19 12-7 7-7-7"/></svg>
-      </div>
-    </div>
-  </section>
+      </aside>
 
-  <!-- ========== SECTION 2: 3D CUSTOMIZER ========== -->
-  <section class="customizer" id="customizer">
-    <div class="section-header">
-      <span class="section-tag">3D Customizer</span>
-      <h2 class="section-title">Design Your Slip</h2>
-      <p class="section-subtitle">Customize every detail and see it come to life in real-time 3D</p>
-    </div>
-    <div class="customizer-layout">
-      <div class="customizer-viewport" id="customizerViewport">
-        <canvas id="bottleCanvas"></canvas>
-        <div class="viewport-hint">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a10 10 0 1 0 10 10"/><path d="M12 2v10l7-7"/></svg>
-          Drag to rotate
-        </div>
-      </div>
-      <div class="control-panel" id="controlPanel">
-        <div class="panel-header">
-          <h3 class="panel-title">Customize Your Slip</h3>
-          <p class="panel-subtitle">Changes update in real-time</p>
-        </div>
-
-        <!-- Brand Name Input -->
-        <div class="control-group">
-          <label class="control-label" for="brandNameInput">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7V4h16v3"/><path d="M9 20h6"/><path d="M12 4v16"/></svg>
-            Startup Name
-          </label>
-          <input type="text" id="brandNameInput" class="control-input" placeholder="Your Brand" maxlength="30" />
-          <span class="char-count"><span id="charCount">0</span>/30</span>
-        </div>
-
-        <!-- Brand Colors -->
-        <div class="control-group">
-          <label class="control-label">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="13.5" cy="6.5" r="2.5"/><circle cx="17.5" cy="10.5" r="2.5"/><circle cx="8.5" cy="7.5" r="2.5"/><circle cx="6.5" cy="12.5" r="2.5"/><path d="M12 22c-4.97 0-9-2.24-9-5v-.09c1.52 1.08 4.91 1.59 9 1.59s7.48-.51 9-1.59V17c0 2.76-4.03 5-9 5Z"/></svg>
-            Brand Colors
-          </label>
-          <div class="color-options">
-            <button class="color-swatch active" data-color="#6c63ff" style="--swatch-color: #6c63ff" title="Electric Violet"></button>
-            <button class="color-swatch" data-color="#00d4aa" style="--swatch-color: #00d4aa" title="Mint Green"></button>
-            <button class="color-swatch" data-color="#ff6b6b" style="--swatch-color: #ff6b6b" title="Coral Red"></button>
-            <button class="color-swatch" data-color="#ffd93d" style="--swatch-color: #ffd93d" title="Sunshine Gold"></button>
-            <button class="color-swatch" data-color="#1e90ff" style="--swatch-color: #1e90ff" title="Ocean Blue"></button>
-            <button class="color-swatch" data-color="#ff69b4" style="--swatch-color: #ff69b4" title="Hot Pink"></button>
-            <div class="custom-color-wrapper">
-              <input type="color" id="customColorPicker" class="custom-color-input" value="#6c63ff" />
-              <span class="custom-color-label">Custom</span>
+      <!-- Main Content -->
+      <main class="main-content">
+        
+        <!-- Topbar -->
+        <header class="topbar">
+          <div class="topbar-left">
+            <span class="material-icons-outlined menu-toggle">menu</span>
+            <h1 id="page-title">Dashboard</h1>
+          </div>
+          <div class="topbar-right">
+            <div class="notification-wrapper">
+              <span class="material-icons-outlined">notifications_none</span>
+              <span class="notification-dot"></span>
+            </div>
+            <div class="user-profile">
+              <img src="https://ui-avatars.com/api/?name=Admin&background=0D8ABC&color=fff" alt="Avatar" class="avatar-img">
+              <span>Admin</span>
+              <span class="material-icons-outlined">expand_more</span>
             </div>
           </div>
-        </div>
+        </header>
 
-        <!-- Logo Upload -->
-        <div class="control-group">
-          <label class="control-label">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-            Upload Logo
-          </label>
-          <div class="upload-zone" id="uploadZone">
-            <div class="upload-content" id="uploadContent">
-              <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-              <span>Drop image here or <strong>browse</strong></span>
-              <span class="upload-hint">PNG, JPG, SVG — Max 2MB</span>
+        <!-- Content Area -->
+        <div id="content-area">
+          
+          <!-- DASHBOARD SECTION -->
+          <section id="dashboard-section" class="content-section">
+            <div class="dashboard-grid">
+              <!-- Stat Cards -->
+              <div class="stat-cards-container">
+                <div class="stat-card blue">
+                  <div class="stat-info">
+                    <h3>Total Slots</h3>
+                    <p id="total-slots">250</p>
+                  </div>
+                  <div class="stat-icon-wrapper"><span class="material-icons-outlined">local_parking</span></div>
+                </div>
+                <div class="stat-card green">
+                  <div class="stat-info">
+                    <h3>Available Slots</h3>
+                    <p id="available-slots">120</p>
+                  </div>
+                  <div class="stat-icon-wrapper"><span class="material-icons-outlined">directions_car</span></div>
+                </div>
+                <div class="stat-card purple">
+                  <div class="stat-info">
+                    <h3>Occupied Slots</h3>
+                    <p id="occupied-slots">98</p>
+                  </div>
+                  <div class="stat-icon-wrapper"><span class="material-icons-outlined">directions_car</span></div>
+                </div>
+                <div class="stat-card orange">
+                  <div class="stat-info">
+                    <h3>Reserved Slots</h3>
+                    <p id="prebooked-slots">32</p>
+                  </div>
+                  <div class="stat-icon-wrapper"><span class="material-icons-outlined">bookmark</span></div>
+                </div>
+              </div>
+
+              <!-- Gate Control & Activity Row -->
+              <div class="middle-row mt-1-5">
+                <div class="card gate-card">
+                  <div class="card-header">
+                    <h2>Gate Control</h2>
+                    <span class="status-badge confirmed" id="gate-status-badge">Closed</span>
+                  </div>
+                  <div class="gate-visual-wrapper">
+                    <div class="gate-barrier" id="gate-barrier"></div>
+                    <div class="gate-base"></div>
+                  </div>
+                  <div class="gate-actions">
+                    <button class="primary-btn-sm" onclick="toggleGate('open')">Open Gate</button>
+                    <button class="filter-btn" onclick="toggleGate('closed')">Close Gate</button>
+                  </div>
+                </div>
+
+                <div class="card activity-card">
+                  <div class="card-header">
+                    <h2>Live Activity Log</h2>
+                    <span class="pulse-dot"></span>
+                  </div>
+                  <div class="activity-feed" id="activity-log">
+                    <!-- Logs injected via JS -->
+                    <div class="activity-item empty">Initializing system...</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Charts & Map Row -->
+              <div class="middle-row">
+                <div class="card overview-card">
+                  <div class="card-header">
+                    <h2>Parking Overview</h2>
+                    <select class="date-filter"><option>Today</option></select>
+                  </div>
+                  <div class="chart-container-wrapper">
+                    <div class="chart-container donut-container">
+                      <canvas id="overviewChart"></canvas>
+                      <div class="donut-center">
+                        <span class="percent">48%</span>
+                        <span class="label">Available</span>
+                      </div>
+                    </div>
+                    <div id="overview-legend" class="custom-legend"></div>
+                  </div>
+                </div>
+                
+                <div class="card map-card">
+                  <div class="card-header">
+                    <h2>Live Parking Map</h2>
+                  </div>
+                  <div class="map-wrapper">
+                    <div class="map-container" id="parking-map"></div>
+                    <div class="map-controls">
+                      <button><span class="material-icons-outlined">add</span></button>
+                      <button><span class="material-icons-outlined">remove</span></button>
+                      <button><span class="material-icons-outlined">my_location</span></button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Bottom Row -->
+              <div class="bottom-row">
+                <div class="card reservations-card">
+                  <div class="card-header">
+                    <h2>Recent Reservations</h2>
+                  </div>
+                  <div class="reservations-list" id="recent-reservations-list"></div>
+                  <div class="card-footer">
+                    <a href="#" class="view-all" onclick="navigateTo('reservations')">View All <span class="material-icons-outlined">chevron_right</span></a>
+                  </div>
+                </div>
+
+                <div class="stats-column">
+                  <div class="card earnings-card">
+                    <div class="card-header">
+                      <h2>Today's Earnings</h2>
+                    </div>
+                    <div class="earnings-summary">
+                      <div class="amount">₹12,450</div>
+                      <div class="trend up"><span class="material-icons-outlined">arrow_upward</span> 15.6% from yesterday</div>
+                    </div>
+                    <div class="chart-container line-container">
+                      <canvas id="earningsChart"></canvas>
+                    </div>
+                  </div>
+                  
+                  <div class="card slot-status-card">
+                    <div class="card-header">
+                      <h2>Slot Status</h2>
+                    </div>
+                    <div class="slot-status-content">
+                      <div class="chart-mini"><canvas id="statusChart"></canvas></div>
+                      <div id="status-legend" class="custom-legend-mini"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
-            <div class="upload-preview" id="uploadPreview" style="display:none;">
-              <img id="logoPreviewImg" alt="Logo preview" />
-              <button class="remove-logo" id="removeLogo" title="Remove logo">✕</button>
+          </section>
+
+          <!-- PARKING SLOTS SECTION -->
+          <section id="slots-section" class="content-section" style="display:none">
+            <div class="card full-map-card">
+              <div class="card-header">
+                <h2>Detailed Parking Grid</h2>
+                <div class="filter-group">
+                  <button class="filter-btn active">All</button>
+                  <button class="filter-btn">Available</button>
+                  <button class="filter-btn">Occupied</button>
+                </div>
+              </div>
+              <div class="parking-grid-large" id="parking-grid-full"></div>
             </div>
-            <input type="file" id="logoFileInput" accept=".png,.jpg,.jpeg,.svg,.webp" hidden />
-          </div>
-        </div>
+          </section>
 
-        <!-- Actions -->
-        <div class="panel-actions">
-          <button class="btn btn-primary btn-glow btn-full" id="orderBtn">
-            <span>Order This Design</span>
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"/><path d="m12 5 7 7-7 7"/></svg>
-          </button>
-          <button class="btn btn-ghost btn-sm" id="resetBtn">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/></svg>
-            Reset All
-          </button>
-        </div>
-      </div>
-    </div>
-  </section>
+          <!-- RESERVATIONS SECTION -->
+          <section id="reservations-section" class="content-section" style="display:none">
+            <div class="card reservations-full-card">
+              <div class="card-header">
+                <h2>All Reservations</h2>
+                <button class="primary-btn-sm">+ New Reservation</button>
+              </div>
+              <div class="table-container">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Plate Number</th>
+                      <th>Slot ID</th>
+                      <th>Arrival</th>
+                      <th>Departure</th>
+                      <th>Status</th>
+                      <th>Action</th>
+                    </tr>
+                  </thead>
+                  <tbody id="full-reservations-list">
+                    <!-- Injected via JS -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </section>
 
-  <!-- ========== SECTION 3: HOW IT WORKS ========== -->
-  <section class="how-it-works" id="how-it-works">
-    <div class="section-header">
-      <span class="section-tag">Simple Process</span>
-      <h2 class="section-title">How It Works</h2>
-      <p class="section-subtitle">From design to delivery in three simple steps</p>
-    </div>
-    <div class="steps-grid">
-      <div class="step-card" data-step="01">
-        <div class="step-icon">
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z"/></svg>
-        </div>
-        <h3 class="step-title">Design</h3>
-        <p class="step-desc">Customize your bottle slip with our interactive 3D design tool. Add your brand, colors, and logo.</p>
-      </div>
-      <div class="step-connector">
-        <svg width="40" height="2" viewBox="0 0 40 2"><line x1="0" y1="1" x2="40" y2="1" stroke="currentColor" stroke-width="2" stroke-dasharray="4 4"/></svg>
-      </div>
-      <div class="step-card" data-step="02">
-        <div class="step-icon">
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M6 18h8"/><path d="M3 22h18"/><path d="M14 22a7 7 0 1 0 0-14h-1"/><path d="M9 14h2"/><path d="M9 12a2 2 0 0 1-2-2V6h6v4a2 2 0 0 1-2 2Z"/><path d="M12 6V3a1 1 0 0 0-1-1H9a1 1 0 0 0-1 1v3"/></svg>
-        </div>
-        <h3 class="step-title">We Print</h3>
-        <p class="step-desc">Premium vinyl printing on durable, waterproof slips. Vibrant colors that last.</p>
-      </div>
-      <div class="step-connector">
-        <svg width="40" height="2" viewBox="0 0 40 2"><line x1="0" y1="1" x2="40" y2="1" stroke="currentColor" stroke-width="2" stroke-dasharray="4 4"/></svg>
-      </div>
-      <div class="step-card" data-step="03">
-        <div class="step-icon">
-          <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m7.5 4.27 9 5.15"/><path d="M21 8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16Z"/><path d="m3.3 7 8.7 5 8.7-5"/><path d="M12 22V12"/></svg>
-        </div>
-        <h3 class="step-title">Deliver</h3>
-        <p class="step-desc">Bulk shipped to your event, office, or storefront. Fast, reliable delivery nationwide.</p>
-      </div>
-    </div>
-  </section>
+          <!-- PAYMENTS SECTION -->
+          <section id="payments-section" class="content-section" style="display:none">
+            <div class="payments-grid">
+              <div class="card revenue-card">
+                <div class="card-header"><h2>Revenue Analytics</h2></div>
+                <div class="revenue-stats">
+                  <div class="rev-item"><span>Monthly Revenue</span><h3>₹4,52,000</h3></div>
+                  <div class="rev-item"><span>Total Transactions</span><h3>1,240</h3></div>
+                </div>
+                <div class="chart-container-lg">
+                  <canvas id="revenueChart"></canvas>
+                </div>
+              </div>
+              <div class="card payment-methods-card">
+                <div class="card-header"><h2>Payment Methods</h2></div>
+                <div class="payment-methods-list">
+                  <div class="method-item"><span class="material-icons-outlined">account_balance_wallet</span> PhonePe <span>65%</span></div>
+                  <div class="method-item"><span class="material-icons-outlined">account_balance_wallet</span> GPay <span>25%</span></div>
+                  <div class="method-item"><span class="material-icons-outlined">credit_card</span> Cards <span>10%</span></div>
+                </div>
+              </div>
+            </div>
+            <div class="card transactions-card mt-1-5">
+              <div class="card-header"><h2>Recent Transactions</h2></div>
+              <div class="table-container">
+                <table class="data-table">
+                  <thead>
+                    <tr>
+                      <th>Transaction ID</th>
+                      <th>User</th>
+                      <th>Method</th>
+                      <th>Amount</th>
+                      <th>Date</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody id="transactions-list">
+                    <!-- Injected via JS -->
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </section>
 
-  <!-- ========== SECTION 4: PRICING ========== -->
-  <section class="pricing" id="pricing">
-    <div class="section-header">
-      <span class="section-tag">Pricing</span>
-      <h2 class="section-title">Simple, Transparent Pricing</h2>
-      <p class="section-subtitle">No hidden fees. Scale as you grow.</p>
-    </div>
-    <div class="pricing-grid">
-      <!-- Starter -->
-      <div class="pricing-card" id="pricingStarter">
-        <div class="pricing-tier">Starter</div>
-        <div class="pricing-amount">
-          <span class="price-currency">$</span>
-          <span class="price-value">2.99</span>
-          <span class="price-unit">/bottle</span>
-        </div>
-        <div class="pricing-volume">100 bottles minimum</div>
-        <ul class="pricing-features">
-          <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> 1 Custom Design</li>
-          <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Standard Vinyl Print</li>
-          <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> 7-Day Shipping</li>
-          <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Email Support</li>
-        </ul>
-        <a href="#bulk-order" class="btn btn-outline btn-full">Order Now</a>
-      </div>
-      <!-- Growth (Popular) -->
-      <div class="pricing-card pricing-popular" id="pricingGrowth">
-        <div class="popular-badge">Most Popular</div>
-        <div class="pricing-tier">Growth</div>
-        <div class="pricing-amount">
-          <span class="price-currency">$</span>
-          <span class="price-value">1.49</span>
-          <span class="price-unit">/bottle</span>
-        </div>
-        <div class="pricing-volume">500 bottles minimum</div>
-        <ul class="pricing-features">
-          <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> 3 Custom Designs</li>
-          <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Premium Vinyl Print</li>
-          <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> 3-Day Express Shipping</li>
-          <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Priority Support</li>
-          <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Free Design Review</li>
-        </ul>
-        <a href="#bulk-order" class="btn btn-primary btn-glow btn-full">Order Now</a>
-      </div>
-      <!-- Enterprise -->
-      <div class="pricing-card" id="pricingEnterprise">
-        <div class="pricing-tier">Enterprise</div>
-        <div class="pricing-amount">
-          <span class="price-value" style="font-size:2.4rem;">Custom</span>
-        </div>
-        <div class="pricing-volume">2,000+ bottles</div>
-        <ul class="pricing-features">
-          <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Unlimited Designs</li>
-          <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Premium+ Print Quality</li>
-          <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Priority Shipping</li>
-          <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Dedicated Account Manager</li>
-          <li><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg> Custom Bottle Options</li>
-        </ul>
-        <a href="#bulk-order" class="btn btn-outline btn-full">Contact Us</a>
-      </div>
-    </div>
-  </section>
+          <!-- USERS SECTION -->
+          <section id="users-section" class="content-section" style="display:none">
+            <div class="card">
+              <div class="card-header"><h2>System Users</h2></div>
+              <div id="users-list" class="users-grid">
+                <!-- User cards here -->
+              </div>
+            </div>
+          </section>
 
-  <!-- ========== SECTION 5: BULK ORDER ========== -->
-  <section class="bulk-order" id="bulk-order">
-    <div class="section-header">
-      <span class="section-tag">Get Started</span>
-      <h2 class="section-title">Place Your Order</h2>
-      <p class="section-subtitle">Fill in the details and we'll get back to you within 24 hours</p>
-    </div>
-    <div class="order-layout">
-      <div class="order-info">
-        <div class="info-card">
-          <div class="info-icon">🚀</div>
-          <h4>Quick Turnaround</h4>
-          <p>From approval to delivery in as fast as 3 business days.</p>
-        </div>
-        <div class="info-card">
-          <div class="info-icon">🎨</div>
-          <h4>Free Design Help</h4>
-          <p>Our team will refine your design for maximum impact.</p>
-        </div>
-        <div class="info-card">
-          <div class="info-icon">💎</div>
-          <h4>Premium Quality</h4>
-          <p>Waterproof, scratch-resistant vinyl that looks stunning.</p>
-        </div>
-      </div>
-      <form class="order-form" id="orderForm">
-        <div class="form-row">
-          <div class="form-group">
-            <label for="companyName">Company Name</label>
-            <input type="text" id="companyName" placeholder="Your company" required />
-          </div>
-          <div class="form-group">
-            <label for="emailAddress">Email</label>
-            <input type="email" id="emailAddress" placeholder="you@company.com" required />
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label for="phoneNumber">Phone</label>
-            <input type="tel" id="phoneNumber" placeholder="+1 (555) 000-0000" />
-          </div>
-          <div class="form-group">
-            <label for="quantity">Quantity</label>
-            <select id="quantity" required>
-              <option value="">Select quantity</option>
-              <option value="100">100 bottles</option>
-              <option value="250">250 bottles</option>
-              <option value="500">500 bottles</option>
-              <option value="1000">1,000 bottles</option>
-              <option value="2000">2,000 bottles</option>
-              <option value="5000">5,000+ bottles</option>
-            </select>
-          </div>
-        </div>
-        <div class="form-group">
-          <label for="message">Message (Optional)</label>
-          <textarea id="message" rows="4" placeholder="Tell us about your project, event, or any special requirements..."></textarea>
-        </div>
-        <button type="submit" class="btn btn-primary btn-glow btn-full btn-lg" id="submitOrder">
-          <span class="btn-text">Submit Order Request</span>
-          <span class="btn-loader" style="display:none;">
-            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
-          </span>
-        </button>
-      </form>
-    </div>
-  </section>
+          <!-- REPORTS SECTION -->
+          <section id="reports-section" class="content-section" style="display:none">
+            <div class="card">
+              <div class="card-header"><h2>System Reports</h2></div>
+              <p class="text-muted">Generate and export system performance reports.</p>
+              <div class="reports-grid mt-1-5">
+                <div class="report-card"><h4>Occupancy Report</h4><button class="primary-btn-sm">Download PDF</button></div>
+                <div class="report-card"><h4>Revenue Report</h4><button class="primary-btn-sm">Download Excel</button></div>
+              </div>
+            </div>
+          </section>
 
-  <!-- ========== FOOTER ========== -->
-  <footer class="footer" id="footer">
-    <div class="footer-content">
-      <div class="footer-brand">
-        <a href="#" class="nav-logo">
-          <span class="logo-icon">💧</span>
-          <span class="logo-text">Slip<span class="logo-accent">Ads</span></span>
-        </a>
-        <p class="footer-tagline">Turning every sip into a brand impression.</p>
-      </div>
-      <div class="footer-links">
-        <div class="footer-col">
-          <h4>Product</h4>
-          <a href="#customizer">3D Customizer</a>
-          <a href="#pricing">Pricing</a>
-          <a href="#bulk-order">Bulk Orders</a>
-        </div>
-        <div class="footer-col">
-          <h4>Company</h4>
-          <a href="#">About Us</a>
-          <a href="#">Careers</a>
-          <a href="#">Press</a>
-        </div>
-        <div class="footer-col">
-          <h4>Support</h4>
-          <a href="#">Help Center</a>
-          <a href="#">Contact</a>
-          <a href="#">FAQ</a>
-        </div>
-      </div>
-    </div>
-    <div class="footer-bottom">
-      <p>© 2026 SlipAds. All rights reserved.</p>
-      <div class="footer-socials">
-        <a href="#" aria-label="Twitter">𝕏</a>
-        <a href="#" aria-label="LinkedIn">in</a>
-        <a href="#" aria-label="Instagram">📷</a>
-      </div>
-    </div>
-  </footer>
+          <!-- SETTINGS SECTION -->
+          <section id="settings-section" class="content-section" style="display:none">
+            <div class="card settings-card">
+              <div class="card-header"><h2>System Settings</h2></div>
+              <form class="settings-form">
+                <div class="form-group">
+                  <label>Base Hourly Rate (₹)</label>
+                  <input type="number" value="25">
+                </div>
+                <div class="form-group">
+                  <label>Grace Period (Minutes)</label>
+                  <input type="number" value="30">
+                </div>
+                <button type="button" class="primary-btn-sm">Save Changes</button>
+              </form>
+            </div>
+          </section>
 
-  <script type="module" src="/main.js"></script>
-</body>
+        </div>
+        
+        <footer class="main-footer">
+          <p>© 2025 Smart Parking System. All rights reserved.</p>
+          <div class="footer-right"><span>Made with ❤️ for smarter cities</span></div>
+        </footer>
+
+      </main>
+    </div>
+    <script type="module" src="/main.js"></script>
+  </body>
 </html>
