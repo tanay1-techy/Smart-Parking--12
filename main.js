@@ -1,444 +1,757 @@
+import { io } from "socket.io-client";
+
 // --- CONFIGURATION ---
-const TOTAL_SLOTS = 250;
-const RATES = {
-  BASE_PER_HR: 25.00,
-  ADVANCE_FEE_PER_HR: 10.00,
-  FINE: 1000.00
-};
-const GRACE_PERIOD_HOURS = 0.5;
+const SOCKET_URL = "http://localhost:3001";
+let socket;
 
 // --- STATE ---
 let slots = [];
+let bookings = [];
+let logs = [];
+let revenueData = { labels: [], data: [] };
+let config = {};
 let chartInstances = {};
-let reservations = [
-  { plate: 'KA01AB1234', slot: 'B-12', arrival: '10:00 AM', departure: '12:00 PM', status: 'confirmed', date: '2 May 2025' },
-  { plate: 'KA05CD5678', slot: 'A-08', arrival: '1:00 PM', departure: '3:00 PM', status: 'confirmed', date: '2 May 2025' },
-  { plate: 'KA03EF9012', slot: 'C-15', arrival: '4:00 PM', departure: '6:00 PM', status: 'pending', date: '2 May 2025' },
-  { plate: 'DL04GH3456', slot: 'D-02', arrival: '09:00 AM', departure: '11:00 AM', status: 'confirmed', date: '2 May 2025' },
-  { plate: 'MH12IJ7890', slot: 'E-45', arrival: '11:30 AM', departure: '01:30 PM', status: 'confirmed', date: '2 May 2025' },
-];
+let currentSection = 'dashboard';
+let currentMapFilter = 'all';
 
-let transactions = [
-  { id: 'TXN-9021', user: 'Tanay Singh', method: 'PhonePe', amount: '₹50.00', date: '2 May, 10:30 AM', status: 'success' },
-  { id: 'TXN-9022', user: 'Rahul Verma', method: 'GPay', amount: '₹25.00', date: '2 May, 11:15 AM', status: 'success' },
-  { id: 'TXN-9023', user: 'Priya Dhar', method: 'PhonePe', amount: '₹100.00', date: '2 May, 12:00 PM', status: 'success' },
-];
-
-// --- DOM ELEMENTS ---
-let elements = {};
-
-function initElements() {
-  elements = {
-    pageTitle: document.getElementById('page-title'),
-    totalSlots: document.getElementById('total-slots'),
-    availableSlots: document.getElementById('available-slots'),
-    occupiedSlots: document.getElementById('occupied-slots'),
-    prebookedSlots: document.getElementById('prebooked-slots'),
-    parkingMap: document.getElementById('parking-map'),
-    recentReservationsList: document.getElementById('recent-reservations-list'),
-    sections: document.querySelectorAll('.content-section'),
-    navItems: document.querySelectorAll('.nav-item'),
-    fullParkingGrid: document.getElementById('parking-grid-full'),
-    fullReservationsTable: document.getElementById('full-reservations-list'),
-    transactionsTable: document.getElementById('transactions-list'),
-    usersGrid: document.getElementById('users-list'),
+// --- ELEMENTS ---
+const elements = {
+    navMenu: document.getElementById('nav-menu'),
+    sections: document.querySelectorAll('.section-content'),
+    topbarTitle: document.getElementById('topbar-title'),
     
-    // Gate & Activity
+    // Stats
+    statTotal: document.getElementById('stat-total'),
+    statAvailable: document.getElementById('stat-available'),
+    statOccupied: document.getElementById('stat-occupied'),
+    statReserved: document.getElementById('stat-reserved'),
+    
+    // Map Stats
+    mapOccupancyRate: document.getElementById('map-occupancy-rate'),
+    mapStatAvailable: document.getElementById('map-stat-available'),
+    mapStatOccupied: document.getElementById('map-stat-occupied'),
+    mapStatReserved: document.getElementById('map-stat-reserved'),
+    
+    // Map
+    parkingGridContainer: document.getElementById('parking-grid-container'),
+    sectionFilters: document.querySelectorAll('.section-btn'),
+    currentSectionLabel: document.getElementById('current-section-label'),
+    
+    // Gate/Sim
     gateBarrier: document.getElementById('gate-barrier'),
-    gateStatus: document.getElementById('gate-status-badge'),
-    activityLog: document.getElementById('activity-log')
-  };
-}
+    plateDisplay: document.getElementById('plate-display'),
+    scannerLine: document.getElementById('scanner-line'),
+    simPlateInput: document.getElementById('sim-plate-input'),
+    
+    // Booking
+    bookingSlot: document.getElementById('booking-slot'),
+    bookingArrival: document.getElementById('booking-arrival'),
+    bookingDuration: document.getElementById('booking-duration'),
+    bookingPlate: document.getElementById('booking-plate'),
+    priceBaseRate: document.getElementById('price-base-rate'),
+    priceCalcBase: document.getElementById('price-calc-base'),
+    priceCalcAdvance: document.getElementById('price-calc-advance'),
+    priceCalcTotal: document.getElementById('price-calc-total'),
+    
+    // Log
+    activityLogBody: document.getElementById('activity-log-body'),
+    
+    // Header & Mobile
+    mobileMenuBtn: document.getElementById('mobile-menu-btn'),
+    sidebar: document.getElementById('sidebar'),
+    copilotInput: document.getElementById('admin-copilot-input'),
+    copilotSubmit: document.getElementById('admin-copilot-submit'),
+    copilotResults: document.getElementById('copilot-results'),
+    copilotOutput: document.getElementById('copilot-output'),
+    
+    // Top Right Actions
+    topActions: document.querySelectorAll('header .flex.items-center.gap-4 button, header .flex.items-center.gap-3 img'),
+    
+    // Footer Links
+    footerLinks: document.querySelectorAll('nav > ul.pt-4 a'),
 
-// --- INITIALIZATION ---
+    // Payment Methods
+    paymentOptions: document.querySelectorAll('.payment-option')
+};
+
+// --- INIT ---
 function init() {
-  initElements();
-  generateSlots();
-  updateDashboard();
-  renderMap();
-  renderRecentReservations();
-  renderFullReservationsTable();
-  renderTransactionsTable();
-  renderUsers();
-  initCharts();
-  setupEventListeners();
-  
-  // Start Phase 6 Features
-  startSimulation();
-  addActivityLog('System initialized. All sensors online.', 'success');
-  
-  // Set default view
-  navigateTo('dashboard');
+    setupNavigation();
+    setupMapFilters();
+    setupExtraButtons();
+    initCharts();
+    connectSocket();
+    
+    // Expose functions to window for onclick handlers
+    window.socket = socket;
+    window.simulateEntry = simulateEntry;
+    window.simulateExit = simulateExit;
+    window.submitBooking = submitBooking;
+    window.updatePriceEstimate = updatePriceEstimate;
+    window.drawNavigationPath = drawNavigationPath;
+    
+    // Set default time for booking
+    const now = new Date();
+    now.setMinutes(now.getMinutes() + 15); // Default to 15 mins from now
+    elements.bookingArrival.value = now.toTimeString().slice(0, 5);
 }
 
-// --- PHASE 6: IOT & GATE LOGIC ---
+// --- SOCKET CONNECTION ---
+function connectSocket() {
+    socket = io(SOCKET_URL);
+
+    socket.on('connect', () => {
+        showToast('Connected to Central Command', 'success');
+    });
+
+    socket.on('init-state', (data) => {
+        slots = data.slots;
+        bookings = data.bookings;
+        revenueData = data.revenue;
+        config = data.config;
+        updateUI();
+    });
+
+    socket.on('state-update', (data) => {
+        slots = data.slots;
+        bookings = data.bookings;
+        if (data.config) config = data.config;
+        updateUI();
+    });
+
+    socket.on('log-update', (log) => {
+        addActivityLog(log.message, log.type);
+        showToast(log.message, log.type);
+    });
+
+    socket.on('gate-control', (status) => {
+        toggleGate(status);
+    });
+
+    socket.on('payment-summary', (data) => {
+        showToast(`Vehicle ${data.vehicleNumber} exit complete. Amount: ₹${data.amount}`, 'success');
+    });
+}
+
+// --- UI UPDATES ---
+function updateUI() {
+    updateStats();
+    updateMap();
+    updateBookingOptions();
+    updateCharts();
+}
+
+function updateStats() {
+    const counts = { available: 0, occupied: 0, reserved: 0 };
+    slots.forEach(s => counts[s.status]++);
+    
+    elements.statTotal.textContent = slots.length;
+    elements.statAvailable.textContent = counts.available;
+    elements.statOccupied.textContent = counts.occupied;
+    elements.statReserved.textContent = counts.reserved;
+    
+    elements.mapStatAvailable.textContent = counts.available;
+    elements.mapStatOccupied.textContent = counts.occupied;
+    elements.mapStatReserved.textContent = counts.reserved;
+    
+    const occupancyRate = slots.length ? Math.round(((counts.occupied + counts.reserved) / slots.length) * 100) : 0;
+    elements.mapOccupancyRate.textContent = `${occupancyRate}%`;
+}
+
+function updateMap() {
+    if (!elements.parkingGridContainer) return;
+    
+    elements.parkingGridContainer.innerHTML = '';
+    
+    const filteredSlots = currentMapFilter === 'all' 
+        ? slots 
+        : slots.filter(s => s.id.startsWith(currentMapFilter));
+        
+    filteredSlots.forEach(slot => {
+        const slotEl = document.createElement('div');
+        
+        // Base styling for the slot box
+        let classes = 'parking-slot-box shadow-sm border-2 ';
+        let content = `<span class="slot-id">${slot.id}</span>`;
+        
+        if (slot.status === 'available') {
+            classes += 'slot-available border-outline-variant';
+        } else if (slot.status === 'occupied') {
+            classes += 'slot-occupied border-red-500';
+            content += `<span class="material-symbols-outlined mt-1 text-white text-sm">directions_car</span>`;
+        } else if (slot.status === 'reserved') {
+            classes += 'slot-reserved border-blue-500 bg-blue-500';
+            content += `<span class="material-symbols-outlined mt-1 text-white text-sm">bookmark</span>`;
+        }
+        
+        slotEl.className = classes;
+        slotEl.innerHTML = content;
+        
+        // Click to book if available
+        if (slot.status === 'available') {
+            slotEl.addEventListener('click', () => {
+                elements.bookingSlot.value = slot.id;
+                
+                // Draw path then navigate
+                drawNavigationPath(slot.id);
+                showToast(`Navigating to Slot ${slot.id}...`, 'info');
+                
+                setTimeout(() => {
+                    navigateTo('booking');
+                    updatePriceEstimate();
+                }, 1500); // give time to see the cool animation
+            });
+        }
+        
+        elements.parkingGridContainer.appendChild(slotEl);
+    });
+}
+
+function updateBookingOptions() {
+    const currentVal = elements.bookingSlot.value;
+    const availableSlots = slots.filter(s => s.status === 'available');
+    
+    elements.bookingSlot.innerHTML = '<option value="">Select a slot...</option>' + 
+        availableSlots.map(s => `<option value="${s.id}">Slot ${s.id}</option>`).join('');
+        
+    // Keep selection if still available
+    if (availableSlots.some(s => s.id === currentVal)) {
+        elements.bookingSlot.value = currentVal;
+    }
+}
+
+// --- LOGIC FUNCTIONS ---
+function drawNavigationPath(slotId) {
+    const svg = document.getElementById('navigation-svg');
+    const scrollArea = document.getElementById('map-scroll-area');
+    const slotElements = document.querySelectorAll('.parking-slot-box');
+    
+    let targetSlot = null;
+    slotElements.forEach(el => {
+        if(el.querySelector('.slot-id').textContent === slotId) targetSlot = el;
+    });
+
+    // Remove existing paths
+    const existingPaths = svg.querySelectorAll('.nav-route');
+    existingPaths.forEach(p => p.remove());
+
+    if (!targetSlot) return;
+
+    const areaRect = scrollArea.getBoundingClientRect();
+    const slotRect = targetSlot.getBoundingClientRect();
+
+    // Relative to the SVG viewbox / scroll area
+    const startX = 70; // Gate A center X
+    const startY = 50; // Gate A bottom Y
+    
+    const endX = (slotRect.left - areaRect.left) + (slotRect.width / 2) + scrollArea.scrollLeft;
+    const endY = (slotRect.top - areaRect.top) + scrollArea.scrollTop;
+
+    const midY = startY + (endY - startY) / 2;
+    const pathData = `M ${startX} ${startY} L ${startX} ${midY} L ${endX} ${midY} L ${endX} ${endY}`;
+
+    const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+    path.setAttribute('d', pathData);
+    path.setAttribute('fill', 'none');
+    path.setAttribute('stroke', 'url(#path-gradient)');
+    path.setAttribute('stroke-width', '4');
+    path.setAttribute('stroke-linecap', 'round');
+    path.setAttribute('stroke-linejoin', 'round');
+    path.setAttribute('filter', 'url(#glow)');
+    path.setAttribute('class', 'nav-route');
+    
+    // Animation properties
+    const pathLength = 1500; // rough estimation, getBBox might not be available immediately
+    path.style.strokeDasharray = pathLength;
+    path.style.strokeDashoffset = pathLength;
+    path.style.transition = 'stroke-dashoffset 1.5s cubic-bezier(0.4, 0, 0.2, 1)';
+
+    svg.appendChild(path);
+
+    // Trigger animation
+    setTimeout(() => {
+        path.style.strokeDashoffset = '0';
+    }, 50);
+}
 
 function toggleGate(status) {
-  if (status === 'open') {
-    elements.gateBarrier.classList.add('open');
-    elements.gateStatus.textContent = 'Open';
-    elements.gateStatus.className = 'status-badge confirmed';
-    addActivityLog('Gate opened manually.', 'info');
-  } else {
-    elements.gateBarrier.classList.remove('open');
-    elements.gateStatus.textContent = 'Closed';
-    elements.gateStatus.className = 'status-badge pending'; // Using pending for yellow/closed
-    addActivityLog('Gate closed.', 'info');
-  }
-}
-
-function addActivityLog(message, type = 'info') {
-  if (!elements.activityLog) return;
-  
-  const time = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-  const item = document.createElement('div');
-  item.className = `activity-item ${type}`;
-  item.innerHTML = `
-    <span class="time">${time}</span>
-    <span class="msg">${message}</span>
-  `;
-  
-  elements.activityLog.prepend(item);
-  if (elements.activityLog.children.length > 10) elements.activityLog.lastElementChild.remove();
-}
-
-function startSimulation() {
-  // Randomly toggle slot status every 8 seconds
-  setInterval(() => {
-    const randomIndex = Math.floor(Math.random() * slots.length);
-    const slot = slots[randomIndex];
-    
-    // Toggle between available and occupied
-    const oldStatus = slot.status;
-    slot.status = oldStatus === 'available' ? 'occupied' : 'available';
-    
-    // Log activity
-    const action = slot.status === 'occupied' ? 'Occupied' : 'Vacated';
-    addActivityLog(`Slot ${slot.id} ${action} (Sensor ${randomIndex + 100})`, slot.status === 'occupied' ? 'alert' : 'success');
-    
-    // Update UI
-    updateDashboard();
-    renderMap();
-    
-    // Flash the slot on the map
-    const mapSlots = document.querySelectorAll('.map-slot');
-    if (mapSlots[randomIndex]) {
-      mapSlots[randomIndex].classList.add('flash');
-      setTimeout(() => mapSlots[randomIndex].classList.remove('flash'), 1000);
+    if (status === 'open') {
+        elements.gateBarrier.classList.add('open');
+    } else {
+        elements.gateBarrier.classList.remove('open');
     }
-  }, 8000);
-
-  // Random Gate Event simulation
-  setInterval(() => {
-    if (Math.random() > 0.7) {
-      addActivityLog('Vehicle detected at entry gate.', 'info');
-      toggleGate('open');
-      setTimeout(() => toggleGate('closed'), 5000);
-    }
-  }, 25000);
 }
 
-function generateSlots() {
-  for (let i = 1; i <= TOTAL_SLOTS; i++) {
-    const rand = Math.random();
-    let status = 'available';
-    if (rand < 0.39) status = 'occupied';
-    else if (rand < 0.52) status = 'reserved';
+function generateRandomPlate() {
+    const states = ['MH', 'DL', 'KA', 'TS', 'TN', 'GJ', 'UP', 'HR'];
+    const state = states[Math.floor(Math.random() * states.length)];
+    const rto = String(Math.floor(Math.random() * 90) + 10);
+    const letters = String.fromCharCode(65 + Math.floor(Math.random() * 26)) + String.fromCharCode(65 + Math.floor(Math.random() * 26));
+    const numbers = String(Math.floor(Math.random() * 9000) + 1000);
+    return `${state}${rto}${letters}${numbers}`;
+}
+
+function simulateEntry() {
+    let plate = elements.simPlateInput.value.trim().toUpperCase();
+    if (!plate) {
+        plate = generateRandomPlate();
+        elements.simPlateInput.value = plate;
+        showToast('AI automatically detected incoming vehicle plate.', 'info');
+    }
     
-    slots.push({
-      id: `${String.fromCharCode(65 + Math.floor(i/50))}-${(i % 50).toString().padStart(2, '0')}`,
-      status: status
+    elements.plateDisplay.textContent = plate;
+    elements.plateDisplay.classList.add('plate-scanning');
+    elements.scannerLine.classList.remove('hidden');
+    
+    setTimeout(() => {
+        elements.plateDisplay.classList.remove('plate-scanning');
+        elements.scannerLine.classList.add('hidden');
+        socket.emit('anpr-entry', plate);
+        elements.simPlateInput.value = '';
+        setTimeout(() => { elements.plateDisplay.textContent = 'READY'; }, 1000);
+    }, 1500);
+}
+
+function simulateExit() {
+    let plate = elements.simPlateInput.value.trim().toUpperCase();
+    if (!plate) {
+        // Find a currently parked vehicle
+        const parkedVehicles = slots.filter(s => s.status === 'occupied' && s.vehicleNumber).map(s => s.vehicleNumber);
+        if (parkedVehicles.length > 0) {
+            plate = parkedVehicles[Math.floor(Math.random() * parkedVehicles.length)];
+            elements.simPlateInput.value = plate;
+            showToast('AI automatically detected outgoing vehicle plate.', 'info');
+        } else {
+            showToast('No vehicles currently parked to simulate exit', 'error');
+            return;
+        }
+    }
+    
+    elements.plateDisplay.textContent = plate;
+    elements.plateDisplay.classList.add('plate-scanning');
+    elements.scannerLine.classList.remove('hidden');
+    
+    setTimeout(() => {
+        elements.plateDisplay.classList.remove('plate-scanning');
+        elements.scannerLine.classList.add('hidden');
+        socket.emit('anpr-exit', plate);
+        elements.simPlateInput.value = '';
+        setTimeout(() => { elements.plateDisplay.textContent = 'READY'; }, 1000);
+    }, 1500);
+}
+
+function submitBooking() {
+    const plate = elements.bookingPlate.value.trim().toUpperCase();
+    const slotId = elements.bookingSlot.value;
+    const arrivalTimeStr = elements.bookingArrival.value;
+    const duration = parseFloat(elements.bookingDuration.value);
+    
+    const selectedPaymentInput = document.querySelector('input[name="payment_method"]:checked');
+    const paymentMethod = selectedPaymentInput ? selectedPaymentInput.value : 'upi';
+    
+    if (!plate || !slotId || !arrivalTimeStr || !duration) {
+        showToast('Please fill all booking details', 'error');
+        return;
+    }
+    
+    const [hours, minutes] = arrivalTimeStr.split(':');
+    const arrivalTime = new Date();
+    arrivalTime.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+    
+    socket.emit('create-booking', {
+        vehicleNumber: plate,
+        slotId: slotId,
+        startTime: arrivalTime.toISOString(),
+        duration: duration,
+        paymentMethod: paymentMethod
     });
-  }
+    
+    elements.bookingPlate.value = '';
+    
+    let paymentText = 'UPI';
+    if(paymentMethod === 'card') paymentText = 'Card';
+    if(paymentMethod === 'netbanking') paymentText = 'Net Banking';
+    
+    showToast(`Payment via ${paymentText} successful. Slot reserved!`, 'success');
+    navigateTo('dashboard');
 }
 
-// --- NAVIGATION LOGIC ---
+function updatePriceEstimate() {
+    const duration = parseFloat(elements.bookingDuration.value || 0);
+    const arrivalTimeStr = elements.bookingArrival.value;
+    
+    if (!duration || !arrivalTimeStr || !config.BASE_RATE) return;
+    
+    const [hours, minutes] = arrivalTimeStr.split(':');
+    const arrival = new Date();
+    arrival.setHours(parseInt(hours), parseInt(minutes), 0, 0);
+    
+    const isAdvance = (arrival - new Date()) > (60 * 60 * 1000); // More than 1 hr
+    
+    const baseAmount = duration * config.BASE_RATE;
+    const advanceAmount = isAdvance ? config.ADVANCE_BOOKING_FEE : 0;
+    
+    let modifierText = '';
+    if (config.MULTIPLIER && config.MULTIPLIER > 1.0) modifierText = ` (Surge x${config.MULTIPLIER.toFixed(1)})`;
+    if (config.MULTIPLIER && config.MULTIPLIER < 1.0) modifierText = ` (Discount x${config.MULTIPLIER.toFixed(1)})`;
+    
+    elements.priceBaseRate.textContent = `₹${config.BASE_RATE}${modifierText}`;
+    elements.priceCalcBase.textContent = `₹${baseAmount.toFixed(2)}`;
+    elements.priceCalcAdvance.textContent = `₹${advanceAmount.toFixed(2)}`;
+    elements.priceCalcTotal.textContent = `₹${(baseAmount + advanceAmount).toFixed(2)}`;
+}
+
+function addActivityLog(message, type) {
+    const timeStr = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    const tr = document.createElement('tr');
+    tr.className = 'hover:bg-surface-container-low transition-colors';
+    
+    let icon = 'info';
+    let iconColor = 'text-blue-500';
+    let bgColor = 'bg-blue-100';
+    
+    if (type === 'success') { icon = 'check_circle'; iconColor = 'text-green-600'; bgColor = 'bg-green-100'; }
+    else if (type === 'alert' || type === 'error') { icon = 'warning'; iconColor = 'text-red-600'; bgColor = 'bg-red-100'; }
+    else if (type === 'booking') { icon = 'bookmark'; iconColor = 'text-purple-600'; bgColor = 'bg-purple-100'; }
+    
+    tr.innerHTML = `
+        <td class="py-4 px-card-padding flex items-center gap-3">
+            <div class="w-8 h-8 rounded-full ${bgColor} ${iconColor} flex items-center justify-center shrink-0">
+                <span class="material-symbols-outlined text-[18px]">${icon}</span>
+            </div>
+            <span class="font-medium">${message}</span>
+        </td>
+        <td class="py-4 px-card-padding">
+            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-[12px] font-medium ${bgColor} ${iconColor} uppercase tracking-wider">
+                ${type}
+            </span>
+        </td>
+        <td class="py-4 px-card-padding text-on-surface-variant">${timeStr}</td>
+    `;
+    
+    elements.activityLogBody.prepend(tr);
+    if (elements.activityLogBody.children.length > 10) {
+        elements.activityLogBody.lastElementChild.remove();
+    }
+}
+
+function showToast(message, type = 'info') {
+    const container = document.getElementById('toast-container');
+    const toast = document.createElement('div');
+    toast.className = `toast toast-enter border-l-4`;
+    
+    let icon = 'info';
+    let color = '#3b82f6';
+    
+    if (type === 'success') { icon = 'check_circle'; color = '#10b981'; toast.style.borderLeftColor = color; }
+    else if (type === 'error' || type === 'alert') { icon = 'error'; color = '#ef4444'; toast.style.borderLeftColor = color; }
+    else { toast.style.borderLeftColor = color; }
+    
+    toast.innerHTML = `
+        <span class="material-symbols-outlined" style="color: ${color}">${icon}</span>
+        <div class="flex-1">
+            <p class="font-bold text-sm text-slate-800">${message}</p>
+        </div>
+        <button class="text-slate-400 hover:text-slate-600" onclick="this.parentElement.remove()">
+            <span class="material-symbols-outlined text-[18px]">close</span>
+        </button>
+    `;
+    
+    container.appendChild(toast);
+    
+    requestAnimationFrame(() => {
+        toast.classList.remove('toast-enter');
+        toast.classList.add('toast-visible');
+    });
+    
+    setTimeout(() => {
+        toast.classList.replace('toast-visible', 'toast-exit');
+        setTimeout(() => toast.remove(), 400);
+    }, 4000);
+}
+
+// --- NAVIGATION & FILTERS ---
+function setupExtraButtons() {
+    // Mobile Menu Toggle
+    if (elements.mobileMenuBtn && elements.sidebar) {
+        elements.mobileMenuBtn.addEventListener('click', () => {
+            elements.sidebar.classList.toggle('-translate-x-full');
+        });
+    }
+
+    // Auth Modal Logic
+    const loginForm = document.getElementById('login-form');
+    if (loginForm) {
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const btn = document.getElementById('login-btn');
+            btn.innerHTML = '<span class="material-symbols-outlined animate-spin text-sm">progress_activity</span> Logging in...';
+            
+            // In a real scenario, this would call fetch('/api/auth/login')
+            // Using a simulated delay for the UI demo
+            setTimeout(() => {
+                const modal = document.getElementById('auth-modal');
+                modal.classList.add('opacity-0');
+                setTimeout(() => {
+                    modal.classList.add('hidden');
+                }, 300);
+                showToast('Successfully logged in as Admin', 'success');
+                btn.innerHTML = 'Login to Dashboard <span class="material-symbols-outlined text-sm">arrow_forward</span>';
+            }, 800);
+        });
+    }
+
+    // Admin AI Copilot Search
+    const processCopilotQuery = () => {
+        const query = elements.copilotInput.value.trim().toLowerCase();
+        if (!query) {
+            elements.copilotResults.classList.add('hidden');
+            return;
+        }
+
+        elements.copilotResults.classList.remove('hidden');
+        elements.copilotOutput.innerHTML = `<div class="flex gap-2 items-center text-slate-500"><div class="w-4 h-4 border-2 border-[#4318FF] border-t-transparent rounded-full animate-spin"></div> Analyzing...</div>`;
+
+        setTimeout(() => {
+            let response = '';
+            
+            // Occupancy Query
+            if (query.includes('occupancy') || query.includes('how many')) {
+                const zoneMatch = query.match(/(zone|section)\s*([a-e])/i);
+                if (zoneMatch) {
+                    const zone = zoneMatch[2].toUpperCase();
+                    const zoneSlots = slots.filter(s => s.id.startsWith(zone));
+                    const occupied = zoneSlots.filter(s => s.status !== 'available').length;
+                    const percent = Math.round((occupied / zoneSlots.length) * 100);
+                    response = `<strong>Zone ${zone}</strong> is currently at <strong>${percent}% occupancy</strong> (${occupied}/${zoneSlots.length} slots).`;
+                } else {
+                    const occupied = slots.filter(s => s.status !== 'available').length;
+                    const percent = Math.round((occupied / slots.length) * 100);
+                    response = `Overall facility occupancy is <strong>${percent}%</strong> (${occupied}/${slots.length} slots).`;
+                }
+            }
+            // Revenue Query
+            else if (query.includes('revenue') || query.includes('money') || query.includes('earnings')) {
+                const todayRevenue = revenueData.data[new Date().getDay()] || 0;
+                response = `Today's total estimated revenue is <strong>₹${todayRevenue}</strong>.`;
+            }
+            // Incident / Alerts Query
+            else if (query.includes('alert') || query.includes('incident') || query.includes('overstay')) {
+                response = `<strong>1 Alert Found:</strong> Vehicle MH12AB1234 in Slot A-05 has overstayed its grace period by 12 minutes. <a href="#" class="text-red-500 underline ml-2">Issue Fine</a>`;
+            }
+            // Maintenance Query
+            else if (query.includes('sensor') || query.includes('health') || query.includes('maintenance')) {
+                response = `All gates operational. <strong>2 sensors</strong> in Section C are currently unresponsive. Maintenance team has been notified.`;
+            }
+            else {
+                response = `I couldn't understand that query. Try asking about "occupancy for Zone B", "today's revenue", or "recent alerts".`;
+            }
+            
+            elements.copilotOutput.innerHTML = response;
+        }, 800); // simulate network delay
+    };
+
+    if (elements.copilotInput) {
+        elements.copilotInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') processCopilotQuery();
+        });
+        
+        // Hide on click outside
+        document.addEventListener('click', (e) => {
+            if (!elements.copilotInput.contains(e.target) && !elements.copilotResults.contains(e.target) && !elements.copilotSubmit.contains(e.target)) {
+                elements.copilotResults.classList.add('hidden');
+            }
+        });
+    }
+
+    if (elements.copilotSubmit) {
+        elements.copilotSubmit.addEventListener('click', processCopilotQuery);
+    }
+
+    // Top Right Actions (Notifications, Settings, Help, Profile)
+    if (elements.topActions) {
+        elements.topActions.forEach(btn => {
+            btn.addEventListener('click', () => {
+                showToast('Feature coming soon in Phase 2!', 'info');
+            });
+        });
+    }
+
+    // Sidebar Footer Links (Support, Logout)
+    if (elements.footerLinks) {
+        elements.footerLinks.forEach(link => {
+            link.addEventListener('click', (e) => {
+                e.preventDefault();
+                if (link.textContent.includes('Logout')) {
+                    showToast('Logging out... Demo Session Ended.', 'alert');
+                    setTimeout(() => window.location.reload(), 1500);
+                } else {
+                    showToast('Support portal will open in a new tab.', 'info');
+                }
+            });
+        });
+    }
+
+    // Payment Option Selection Logic
+    if (elements.paymentOptions) {
+        elements.paymentOptions.forEach(option => {
+            const radio = option.querySelector('input[type="radio"]');
+            radio.addEventListener('change', () => {
+                // Reset all
+                elements.paymentOptions.forEach(opt => {
+                    opt.classList.remove('border-[#4318FF]', 'bg-[#4318FF]/5');
+                    opt.classList.add('border-outline-variant/30', 'hover:bg-surface-bright');
+                    const icon = opt.querySelector('.option-icon');
+                    if(icon) {
+                        icon.classList.remove('text-[#4318FF]');
+                        icon.classList.add('text-slate-500');
+                    }
+                });
+                
+                // Set active
+                if (radio.checked) {
+                    option.classList.remove('border-outline-variant/30', 'hover:bg-surface-bright');
+                    option.classList.add('border-[#4318FF]', 'bg-[#4318FF]/5');
+                    const activeIcon = option.querySelector('.option-icon');
+                    if(activeIcon) {
+                        activeIcon.classList.remove('text-slate-500');
+                        activeIcon.classList.add('text-[#4318FF]');
+                    }
+                }
+            });
+        });
+    }
+}
+
+function setupNavigation() {
+    const links = elements.navMenu.querySelectorAll('a[data-section]');
+    links.forEach(link => {
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            navigateTo(link.dataset.section);
+        });
+    });
+}
+
 function navigateTo(sectionId) {
-  if (!elements.sections) return;
-  
-  // Hide all sections
-  elements.sections.forEach(sec => sec.style.display = 'none');
-  
-  // Show target section
-  const target = document.getElementById(`${sectionId}-section`);
-  if (target) {
-    target.style.display = 'block';
-    elements.pageTitle.textContent = sectionId.charAt(0).toUpperCase() + sectionId.slice(1).replace('-', ' ');
-  }
-
-  // Update nav active state
-  elements.navItems.forEach(item => {
-    const link = item.getAttribute('href')?.replace('#', '');
-    if (link === sectionId) {
-      elements.navItems.forEach(i => i.classList.remove('active'));
-      item.classList.add('active');
-    }
-  });
-
-  // Section specific triggers
-  if (sectionId === 'slots') renderFullParkingGrid();
-  
-  // Resize charts to fix canvas issues when showing hidden containers
-  Object.values(chartInstances).forEach(chart => {
-    if (chart && typeof chart.resize === 'function') chart.resize();
-  });
-}
-
-function setupEventListeners() {
-  elements.navItems.forEach(item => {
-    item.addEventListener('click', (e) => {
-      e.preventDefault();
-      const sectionId = item.getAttribute('href').replace('#', '');
-      navigateTo(sectionId);
+    currentSection = sectionId;
+    
+    // Update Nav UI
+    elements.navMenu.querySelectorAll('a').forEach(a => a.classList.remove('active'));
+    const activeLink = elements.navMenu.querySelector(`a[data-section="${sectionId}"]`);
+    if (activeLink) activeLink.classList.add('active');
+    
+    // Update Title
+    const titles = { dashboard: 'Overview', map: 'Live Parking Map', booking: 'Reservations' };
+    elements.topbarTitle.textContent = titles[sectionId] || 'Dashboard';
+    
+    // Show/Hide Sections
+    elements.sections.forEach(sec => {
+        if (sec.id === `${sectionId}-section`) {
+            sec.classList.remove('hidden');
+        } else {
+            sec.classList.add('hidden');
+        }
     });
-  });
-
-  // Global functions for inline onclicks
-  window.navigateTo = navigateTo;
-  window.toggleGate = toggleGate;
 }
 
-// --- RENDERING ---
-
-function updateDashboard() {
-  const counts = slots.reduce((acc, slot) => {
-    acc[slot.status]++;
-    return acc;
-  }, { available: 0, occupied: 0, reserved: 0 });
-
-  if (elements.totalSlots) elements.totalSlots.textContent = TOTAL_SLOTS;
-  if (elements.availableSlots) elements.availableSlots.textContent = counts.available;
-  if (elements.occupiedSlots) elements.occupiedSlots.textContent = counts.occupied;
-  if (elements.prebookedSlots) elements.prebookedSlots.textContent = counts.reserved;
-
-  updateCharts(counts);
-}
-
-function renderMap() {
-  if (!elements.parkingMap) return;
-  elements.parkingMap.innerHTML = '';
-  for (let s = 0; s < 3; s++) {
-    const section = document.createElement('div');
-    section.className = 'map-section';
-    for (let i = 0; i < 8; i++) {
-      const slotIndex = s * 8 + i;
-      const slot = slots[slotIndex];
-      const slotEl = document.createElement('div');
-      slotEl.className = `map-slot ${slot.status}`;
-      slotEl.title = `Slot ${slot.id}`;
-      section.appendChild(slotEl);
-    }
-    elements.parkingMap.appendChild(section);
-  }
-}
-
-function renderRecentReservations() {
-  if (!elements.recentReservationsList) return;
-  elements.recentReservationsList.innerHTML = '';
-  reservations.slice(0, 3).forEach(res => {
-    const item = document.createElement('div');
-    item.className = 'reservation-item';
-    item.innerHTML = `
-      <div class="res-left">
-        <div class="res-icon"><span class="material-icons-outlined">directions_car</span></div>
-        <div class="res-info"><h4>${res.plate}</h4><p>Slot ${res.slot}</p></div>
-      </div>
-      <div class="res-time"><div class="date">${res.date}</div><div class="hours">${res.arrival} - ${res.departure}</div></div>
-      <div class="status-badge ${res.status}">${res.status.charAt(0).toUpperCase() + res.status.slice(1)}</div>
-    `;
-    elements.recentReservationsList.appendChild(item);
-  });
-}
-
-function renderFullParkingGrid() {
-  if (!elements.fullParkingGrid) return;
-  elements.fullParkingGrid.innerHTML = '';
-  slots.forEach(slot => {
-    const slotEl = document.createElement('div');
-    slotEl.className = `parking-slot ${slot.status} pop`;
-    slotEl.innerHTML = `<span>${slot.id}</span>`;
-    elements.fullParkingGrid.appendChild(slotEl);
-  });
-}
-
-function renderFullReservationsTable() {
-  if (!elements.fullReservationsTable) return;
-  elements.fullReservationsTable.innerHTML = '';
-  reservations.forEach(res => {
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${res.plate}</td>
-      <td>${res.slot}</td>
-      <td>${res.arrival}</td>
-      <td>${res.departure}</td>
-      <td><span class="status-badge ${res.status}">${res.status}</span></td>
-      <td><button class="filter-btn">Edit</button></td>
-    `;
-    elements.fullReservationsTable.appendChild(tr);
-  });
-}
-
-function renderTransactionsTable() {
-  if (!elements.transactionsTable) return;
-  elements.transactionsTable.innerHTML = '';
-  transactions.forEach(txn => {
-    const tr = document.createElement('tr');
-    tr.innerHTML = `
-      <td>${txn.id}</td>
-      <td>${txn.user}</td>
-      <td>${txn.method}</td>
-      <td>${txn.amount}</td>
-      <td>${txn.date}</td>
-      <td><span class="status-badge confirmed">Success</span></td>
-    `;
-    elements.transactionsTable.appendChild(tr);
-  });
-}
-
-function renderUsers() {
-  if (!elements.usersGrid) return;
-  elements.usersGrid.innerHTML = '';
-  const users = [
-    { name: 'Tanay Singh', role: 'Super Admin', img: 'https://ui-avatars.com/api/?name=Tanay+Singh' },
-    { name: 'Security One', role: 'Parking Attendant', img: 'https://ui-avatars.com/api/?name=S+1' },
-    { name: 'Manager X', role: 'Branch Manager', img: 'https://ui-avatars.com/api/?name=M+X' },
-  ];
-  users.forEach(user => {
-    const card = document.createElement('div');
-    card.className = 'report-card';
-    card.innerHTML = `
-      <img src="${user.img}" style="width: 50px; border-radius: 50%; margin-bottom: 0.5rem;">
-      <h4>${user.name}</h4>
-      <p class="text-muted" style="font-size: 0.8rem;">${user.role}</p>
-    `;
-    elements.usersGrid.appendChild(card);
-  });
+function setupMapFilters() {
+    elements.sectionFilters.forEach(btn => {
+        btn.addEventListener('click', () => {
+            elements.sectionFilters.forEach(b => {
+                b.classList.remove('bg-secondary-container', 'text-white');
+                b.classList.add('bg-surface-bright', 'text-on-surface-variant');
+            });
+            btn.classList.add('bg-secondary-container', 'text-white');
+            btn.classList.remove('bg-surface-bright', 'text-on-surface-variant');
+            
+            currentMapFilter = btn.dataset.section;
+            elements.currentSectionLabel.textContent = currentMapFilter === 'all' 
+                ? 'All Sections Layout' 
+                : `Section ${currentMapFilter} Layout`;
+                
+            updateMap();
+        });
+    });
 }
 
 // --- CHARTS ---
 function initCharts() {
-  const counts = slots.reduce((acc, slot) => {
-    acc[slot.status]++;
-    return acc;
-  }, { available: 0, occupied: 0, reserved: 0 });
+    const ctxOverview = document.getElementById('parkingOverviewChart');
+    if (ctxOverview) {
+        chartInstances.overview = new Chart(ctxOverview.getContext('2d'), {
+            type: 'doughnut',
+            data: {
+                labels: ['Available', 'Occupied', 'Reserved'],
+                datasets: [{
+                    data: [1, 1, 1], // Initial dummy data
+                    backgroundColor: ['#22c55e', '#ef4444', '#3b82f6'],
+                    borderWidth: 0,
+                    hoverOffset: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                cutout: '75%',
+                plugins: {
+                    legend: { position: 'bottom', labels: { usePointStyle: true, padding: 20 } }
+                }
+            }
+        });
+    }
 
-  // Dashboard Donut
-  const ctxOverview = document.getElementById('overviewChart')?.getContext('2d');
-  if (ctxOverview) {
-    chartInstances.overview = new Chart(ctxOverview, {
-      type: 'doughnut',
-      data: {
-        labels: ['Available', 'Occupied', 'Reserved'],
-        datasets: [{
-          data: [counts.available, counts.occupied, counts.reserved],
-          backgroundColor: ['#05cd99', '#868cff', '#ffb547'],
-          borderWidth: 0,
-          hoverOffset: 10
-        }]
-      },
-      options: { responsive: true, maintainAspectRatio: false, cutout: '85%', plugins: { legend: { display: false } } }
-    });
-    renderCustomLegend('overview-legend', chartInstances.overview);
-  }
+    const ctxLine = document.getElementById('earningsChart');
+    if (ctxLine) {
+        const lineCtx = ctxLine.getContext('2d');
+        const gradientFill = lineCtx.createLinearGradient(0, 0, 0, 400);
+        gradientFill.addColorStop(0, 'rgba(67, 24, 255, 0.2)');
+        gradientFill.addColorStop(1, 'rgba(67, 24, 255, 0.0)');
 
-  // Dashboard Line
-  const ctxEarnings = document.getElementById('earningsChart')?.getContext('2d');
-  if (ctxEarnings) {
-    chartInstances.earnings = new Chart(ctxEarnings, {
-      type: 'line',
-      data: {
-        labels: ['12 AM', '4 AM', '8 AM', '12 PM', '4 PM', '8 PM', '12 AM'],
-        datasets: [{
-          label: 'Earnings',
-          data: [2000, 3500, 3000, 6000, 5000, 9000, 12450],
-          borderColor: '#4318ff',
-          backgroundColor: 'rgba(67, 24, 255, 0.1)',
-          borderWidth: 4,
-          fill: true,
-          tension: 0.4,
-          pointRadius: 4
-        }]
-      },
-      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } }, scales: { x: { display: true }, y: { display: false } } }
-    });
-  }
-
-  // Revenue Chart (Payment Section)
-  const ctxRev = document.getElementById('revenueChart')?.getContext('2d');
-  if (ctxRev) {
-    chartInstances.revenue = new Chart(ctxRev, {
-      type: 'bar',
-      data: {
-        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-        datasets: [{
-          label: 'Revenue',
-          data: [320000, 380000, 350000, 420000, 452000, 480000],
-          backgroundColor: '#4318ff',
-          borderRadius: 8
-        }]
-      },
-      options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { display: false } } }
-    });
-  }
-
-  // Dashboard Mini Donut
-  const ctxStatus = document.getElementById('statusChart')?.getContext('2d');
-  if (ctxStatus) {
-    chartInstances.status = new Chart(ctxStatus, {
-      type: 'doughnut',
-      data: {
-        labels: ['Available', 'Occupied', 'Reserved'],
-        datasets: [{ data: [counts.available, counts.occupied, counts.reserved], backgroundColor: ['#05cd99', '#868cff', '#ffb547'], borderWidth: 0 }]
-      },
-      options: { responsive: true, maintainAspectRatio: false, cutout: '80%', plugins: { legend: { display: false } } }
-    });
-    renderMiniLegend('status-legend', counts);
-  }
+        chartInstances.revenue = new Chart(lineCtx, {
+            type: 'line',
+            data: {
+                labels: [],
+                datasets: [{
+                    label: 'Revenue (₹)',
+                    data: [],
+                    borderColor: '#4317ff',
+                    backgroundColor: gradientFill,
+                    borderWidth: 3,
+                    pointBackgroundColor: '#ffffff',
+                    pointBorderColor: '#4317ff',
+                    pointBorderWidth: 2,
+                    pointRadius: 4,
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: {
+                    y: { beginAtZero: true, grid: { borderDash: [5, 5] } },
+                    x: { grid: { display: false } }
+                }
+            }
+        });
+    }
 }
 
-function renderCustomLegend(containerId, chart) {
-  const container = document.getElementById(containerId);
-  if (!container) return;
-  container.innerHTML = '';
-  chart.data.labels.forEach((label, i) => {
-    const item = document.createElement('div');
-    item.className = 'legend-item';
-    const color = chart.data.datasets[0].backgroundColor[i];
-    item.innerHTML = `<div class="legend-dot" style="background: ${color}"></div><span>${label} (${chart.data.datasets[0].data[i]})</span>`;
-    container.appendChild(item);
-  });
+function updateCharts() {
+    if (chartInstances.overview) {
+        const counts = { available: 0, occupied: 0, reserved: 0 };
+        slots.forEach(s => counts[s.status]++);
+        chartInstances.overview.data.datasets[0].data = [counts.available, counts.occupied, counts.reserved];
+        chartInstances.overview.update();
+    }
+    
+    if (chartInstances.revenue && revenueData) {
+        chartInstances.revenue.data.labels = revenueData.labels;
+        chartInstances.revenue.data.datasets[0].data = revenueData.data;
+        chartInstances.revenue.update();
+    }
 }
 
-function renderMiniLegend(containerId, counts) {
-  const container = document.getElementById(containerId);
-  if (!container) return;
-  container.innerHTML = '';
-  const items = [
-    { label: 'Available', count: counts.available, color: '#05cd99' },
-    { label: 'Occupied', count: counts.occupied, color: '#868cff' },
-    { label: 'Reserved', count: counts.reserved, color: '#ffb547' }
-  ];
-  items.forEach(item => {
-    const pct = Math.round((item.count / TOTAL_SLOTS) * 100);
-    const row = document.createElement('div');
-    row.className = 'legend-item-mini';
-    row.innerHTML = `<div style="display: flex; align-items: center; gap: 8px;"><div class="legend-dot" style="background: ${item.color}; width: 8px; height: 8px;"></div><span>${item.label}</span></div><span>${item.count} (${pct}%)</span>`;
-    container.appendChild(row);
-  });
-}
-
-function updateCharts(counts) {
-  if (chartInstances.overview) {
-    chartInstances.overview.data.datasets[0].data = [counts.available, counts.occupied, counts.reserved];
-    chartInstances.overview.update();
-    renderCustomLegend('overview-legend', chartInstances.overview);
-  }
-  if (chartInstances.status) {
-    chartInstances.status.data.datasets[0].data = [counts.available, counts.occupied, counts.reserved];
-    chartInstances.status.update();
-    renderMiniLegend('status-legend', counts);
-  }
-}
-
-// Boot up
 document.addEventListener('DOMContentLoaded', init);
