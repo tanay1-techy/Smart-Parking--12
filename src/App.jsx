@@ -96,6 +96,7 @@ const App = () => {
   const [newUser, setNewUser] = useState({ name: '', email: '', role: 'User', status: 'Active' });
   const [newComplaint, setNewComplaint] = useState({ type: 'Payment Issue', desc: '', user: '' });
   const [newFeedback, setNewFeedback] = useState({ worker: '', rating: 5, feedback: '', user: '' });
+  const [selectedParking, setSelectedParking] = useState(null);
 
   const availableParkingLots = INDIA_PARKING_DATA[selectedState][selectedCity] || [];
 
@@ -121,7 +122,28 @@ const App = () => {
   const reservedCount = isLockdown ? 0 : slots.filter(s => s.status === 'reserved').length;
   const pieData = [ { name: 'Available', value: availableCount, color: '#22c55e' }, { name: 'Occupied', value: occupiedCount, color: '#6366f1' }, { name: 'Reserved', value: reservedCount, color: '#f59e0b' } ];
 
-  const handleStateChange = (state) => { setSelectedState(state); setSelectedCity(Object.keys(INDIA_PARKING_DATA[state])[0]); };
+  const handleStateChange = (state) => { setSelectedState(state); setSelectedCity(Object.keys(INDIA_PARKING_DATA[state])[0]); setSelectedParking(null); };
+  const handleCityChange = (city) => { setSelectedCity(city); setSelectedParking(null); };
+
+  const handleSelectParking = (park) => {
+    setSelectedParking(park);
+    const total = park.total;
+    const available = park.available;
+    const occupied = total - available;
+    
+    const newSlots = Array.from({ length: total }, (_, i) => {
+      let status = 'available';
+      if (i < occupied) status = 'occupied';
+      return {
+        id: `${String.fromCharCode(65 + Math.floor(i / (total/5)) || 65)}-${String(i % (total/5) + 1).padStart(2, '0')}`,
+        status: status
+      };
+    });
+    setSlots(newSlots);
+    setNotification(`Switched to ${park.name} Command Center`);
+    setTimeout(() => setNotification(null), 3000);
+  };
+
   const handleVerify = () => { setIsVerifying(true); setNotification("Running diagnostics..."); setTimeout(() => { setIsVerifying(false); setNotification("All systems verified."); setTimeout(() => setNotification(null), 3000); }, 2000); };
   const handleLockdown = () => { setIsLockdown(!isLockdown); setNotification(isLockdown ? "Lockdown lifted." : "CRITICAL: Area Lockdown!"); setTimeout(() => setNotification(null), 4000); };
   
@@ -224,8 +246,133 @@ const App = () => {
           <AnimatePresence mode="wait">
             {activeSection === 'dashboard' && (
               <motion.div key="dashboard" initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} className="flex flex-col gap-8">
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6"><StatCard label="Total Slots" value="250" icon={LayoutDashboard} color="bg-[#4318FF]" /><StatCard label="Available Slots" value={availableCount} icon={CheckCircle2} color="bg-[#05CD99]" /><StatCard label="Occupied Slots" value={occupiedCount} icon={Car} color="bg-[#7551FF]" /><StatCard label="Reserved Slots" value={reservedCount} icon={Calendar} color="bg-[#FFB547]" /></div>
-                <div className="grid grid-cols-1 xl:grid-cols-3 gap-8"><div className="bg-[#111C44] p-8 rounded-3xl shadow-sm border border-white/5 flex flex-col"><h3 className="font-bold text-lg text-white mb-8">Parking Overview</h3><div className="h-64 relative flex items-center justify-center"><ResponsiveContainer width="100%" height="100%"><PieChart><Pie data={pieData} innerRadius={60} outerRadius={90} paddingAngle={5} dataKey="value">{pieData.map((e, i) => <Cell key={i} fill={e.color} />)}</Pie><Tooltip /></PieChart></ResponsiveContainer><div className="absolute flex flex-col items-center"><span className="text-3xl font-bold text-white">48%</span><span className="text-xs text-white/40 font-medium">Available</span></div></div><div className="mt-6 flex flex-col gap-3">{pieData.map(i => <div key={i.name} className="flex items-center justify-between"><div className="flex items-center gap-3"><div className="w-3 h-3 rounded-full" style={{backgroundColor:i.color}}></div><span className="text-sm font-medium text-white/60">{i.name}</span></div><span className="text-sm font-bold text-white">{i.value}</span></div>)}</div></div><div className="xl:col-span-2 bg-[#111C44] p-8 rounded-3xl shadow-sm border border-white/5 flex flex-col"><div className="flex justify-between items-center mb-8"><div><h3 className="font-bold text-lg text-white">Explore Parking Lots</h3><p className="text-xs text-white/40 font-medium mt-1">Select state and city to find available slots across India</p></div><div className="flex items-center gap-2 text-[#4318FF] text-[10px] font-black bg-[#1B254B] px-4 py-2 rounded-full border border-[#4318FF]/10 tracking-widest"><MapPin size={12}/> LIVE DATABASE</div></div><div className="grid grid-cols-2 gap-4 mb-8"><div className="flex flex-col gap-2"><label className="text-[10px] font-bold text-white/40 uppercase tracking-[2px] pl-1">Select State</label><div className="relative group"><select value={selectedState} onChange={(e) => handleStateChange(e.target.value)} className="w-full bg-[#1B254B] border-none rounded-2xl px-5 py-4 text-white font-bold appearance-none cursor-pointer focus:ring-2 focus:ring-[#4318FF]/20">{Object.keys(INDIA_PARKING_DATA).map(state => <option key={state} value={state} className="bg-[#111C44]">{state}</option>)}</select><ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-white/40 pointer-events-none group-hover:text-[#4318FF] transition-colors" size={20} /></div></div><div className="flex flex-col gap-2"><label className="text-[10px] font-bold text-white/40 uppercase tracking-[2px] pl-1">Select City</label><div className="relative group"><select value={selectedCity} onChange={(e) => setSelectedCity(e.target.value)} className="w-full bg-[#1B254B] border-none rounded-2xl px-5 py-4 text-white font-bold appearance-none cursor-pointer focus:ring-2 focus:ring-[#4318FF]/20">{Object.keys(INDIA_PARKING_DATA[selectedState]).map(city => <option key={city} value={city} className="bg-[#111C44]">{city}</option>)}</select><ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-white/40 pointer-events-none group-hover:text-[#4318FF] transition-colors" size={20} /></div></div></div><div className="flex-1 overflow-y-auto pr-2 flex flex-col gap-4 max-h-[250px]"><AnimatePresence mode="popLayout">{availableParkingLots.map((park, idx) => (<motion.div key={park.name} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.05 }} className="flex items-center justify-between p-4 bg-[#1B254B] hover:bg-[#111C44] border border-transparent hover:border-[#4318FF]/20 rounded-2xl transition-all group"><div className="flex items-center gap-4"><div className="w-12 h-12 bg-[#111C44] rounded-xl flex items-center justify-center text-[#4318FF] shadow-sm group-hover:bg-[#4318FF] group-hover:text-white transition-all"><Navigation size={20} /></div><div><h4 className="font-bold text-white text-sm">{park.name}</h4><p className="text-[10px] text-white/40 font-bold uppercase tracking-wider">{selectedCity}, {selectedState}</p></div></div><div className="flex items-center gap-8"><div className="text-right"><div className="flex items-center gap-1.5 mb-0.5"><div className={`w-1.5 h-1.5 rounded-full ${park.available > 10 ? 'bg-[#05CD99]' : park.available > 0 ? 'bg-[#FFB547]' : 'bg-red-500'}`}></div><span className={`text-xs font-black ${park.available > 10 ? 'text-[#05CD99]' : park.available > 0 ? 'text-[#FFB547]' : 'text-red-500'}`}>{park.available === 0 ? 'FULL' : `${park.available}/${park.total}`}</span></div><p className="text-[10px] text-white/40 font-bold tracking-widest">{park.distance} AWAY</p></div><button className="bg-[#111C44] text-[#4318FF] border border-[#4318FF]/20 hover:bg-[#4318FF] hover:text-white px-5 py-2.5 rounded-xl text-[10px] font-black transition-all shadow-sm">DETAILS</button></div></motion.div>))}</AnimatePresence></div></div></div>
+                {selectedParking ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    <StatCard label="Total Slots" value={slots.length} icon={LayoutDashboard} color="bg-[#4318FF]" />
+                    <StatCard label="Available Slots" value={availableCount} icon={CheckCircle2} color="bg-[#05CD99]" />
+                    <StatCard label="Occupied Slots" value={occupiedCount} icon={Car} color="bg-[#7551FF]" />
+                    <StatCard label="Reserved Slots" value={reservedCount} icon={Calendar} color="bg-[#FFB547]" />
+                  </div>
+                ) : (
+                  <div className="bg-[#4318FF]/10 border border-[#4318FF]/20 p-8 rounded-3xl flex flex-col items-center justify-center text-center gap-4">
+                    <div className="w-16 h-16 bg-[#4318FF] rounded-2xl flex items-center justify-center text-white shadow-lg shadow-[#4318FF]/20 animate-bounce">
+                      <MapPin size={32} />
+                    </div>
+                    <div>
+                      <h3 className="text-2xl font-black text-white">Select a Parking Lot</h3>
+                      <p className="text-white/40 font-medium max-w-md mt-2">To view real-time statistics and manage slots, please select a state, city and then a specific parking location from the explorer below.</p>
+                    </div>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-1 xl:grid-cols-3 gap-8">
+                  {selectedParking && (
+                    <div className="bg-[#111C44] p-8 rounded-3xl shadow-sm border border-white/5 flex flex-col">
+                      <h3 className="font-bold text-lg text-white mb-8">Parking Overview</h3>
+                      <div className="h-64 relative flex items-center justify-center">
+                        <ResponsiveContainer width="100%" height="100%">
+                          <PieChart>
+                            <Pie data={pieData} innerRadius={60} outerRadius={90} paddingAngle={5} dataKey="value">
+                              {pieData.map((e, i) => <Cell key={i} fill={e.color} />)}
+                            </Pie>
+                            <Tooltip />
+                          </PieChart>
+                        </ResponsiveContainer>
+                        <div className="absolute flex flex-col items-center">
+                          <span className="text-3xl font-bold text-white">{Math.round((availableCount / slots.length) * 100)}%</span>
+                          <span className="text-xs text-white/40 font-medium">Available</span>
+                        </div>
+                      </div>
+                      <div className="mt-6 flex flex-col gap-3">
+                        {pieData.map(i => (
+                          <div key={i.name} className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              <div className="w-3 h-3 rounded-full" style={{backgroundColor:i.color}}></div>
+                              <span className="text-sm font-medium text-white/60">{i.name}</span>
+                            </div>
+                            <span className="text-sm font-bold text-white">{i.value}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  <div className={`${selectedParking ? 'xl:col-span-2' : 'xl:col-span-3'} bg-[#111C44] p-8 rounded-3xl shadow-sm border border-white/5 flex flex-col`}>
+                    <div className="flex justify-between items-center mb-8">
+                      <div>
+                        <h3 className="font-bold text-lg text-white">Explore Parking Lots</h3>
+                        <p className="text-xs text-white/40 font-medium mt-1">Select state and city to find available slots across India</p>
+                      </div>
+                      <div className="flex items-center gap-2 text-[#4318FF] text-[10px] font-black bg-[#1B254B] px-4 py-2 rounded-full border border-[#4318FF]/10 tracking-widest">
+                        <MapPin size={12}/> LIVE DATABASE
+                      </div>
+                    </div>
+                    
+                    <div className="grid grid-cols-2 gap-4 mb-8">
+                      <div className="flex flex-col gap-2">
+                        <label className="text-[10px] font-bold text-white/40 uppercase tracking-[2px] pl-1">Select State</label>
+                        <div className="relative group">
+                          <select value={selectedState} onChange={(e) => handleStateChange(e.target.value)} className="w-full bg-[#1B254B] border-none rounded-2xl px-5 py-4 text-white font-bold appearance-none cursor-pointer focus:ring-2 focus:ring-[#4318FF]/20">
+                            {Object.keys(INDIA_PARKING_DATA).map(state => <option key={state} value={state} className="bg-[#111C44]">{state}</option>)}
+                          </select>
+                          <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-white/40 pointer-events-none group-hover:text-[#4318FF] transition-colors" size={20} />
+                        </div>
+                      </div>
+                      <div className="flex flex-col gap-2">
+                        <label className="text-[10px] font-bold text-white/40 uppercase tracking-[2px] pl-1">Select City</label>
+                        <div className="relative group">
+                          <select value={selectedCity} onChange={(e) => handleCityChange(e.target.value)} className="w-full bg-[#1B254B] border-none rounded-2xl px-5 py-4 text-white font-bold appearance-none cursor-pointer focus:ring-2 focus:ring-[#4318FF]/20">
+                            {Object.keys(INDIA_PARKING_DATA[selectedState]).map(city => <option key={city} value={city} className="bg-[#111C44]">{city}</option>)}
+                          </select>
+                          <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 text-white/40 pointer-events-none group-hover:text-[#4318FF] transition-colors" size={20} />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="flex-1 overflow-y-auto pr-2 flex flex-col gap-4 max-h-[400px]">
+                      <AnimatePresence mode="popLayout">
+                        {availableParkingLots.map((park, idx) => (
+                          <motion.div key={park.name} initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.05 }} 
+                            className={`flex items-center justify-between p-4 rounded-2xl transition-all group border cursor-pointer
+                              ${selectedParking?.name === park.name ? 'bg-[#4318FF]/20 border-[#4318FF]' : 'bg-[#1B254B] hover:bg-[#111C44] border-transparent hover:border-[#4318FF]/20'}`}
+                            onClick={() => handleSelectParking(park)}>
+                            <div className="flex items-center gap-4">
+                              <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-all shadow-sm
+                                ${selectedParking?.name === park.name ? 'bg-[#4318FF] text-white' : 'bg-[#111C44] text-[#4318FF] group-hover:bg-[#4318FF] group-hover:text-white'}`}>
+                                <Navigation size={20} />
+                              </div>
+                              <div>
+                                <h4 className="font-bold text-white text-sm">{park.name}</h4>
+                                <p className="text-[10px] text-white/40 font-bold uppercase tracking-wider">{selectedCity}, {selectedState}</p>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-8">
+                              <div className="text-right">
+                                <div className="flex items-center gap-1.5 mb-0.5">
+                                  <div className={`w-1.5 h-1.5 rounded-full ${park.available > 10 ? 'bg-[#05CD99]' : park.available > 0 ? 'bg-[#FFB547]' : 'bg-red-500'}`}></div>
+                                  <span className={`text-xs font-black ${park.available > 10 ? 'text-[#05CD99]' : park.available > 0 ? 'text-[#FFB547]' : 'text-red-500'}`}>
+                                    {park.available === 0 ? 'FULL' : `${park.available}/${park.total}`}
+                                  </span>
+                                </div>
+                                <p className="text-[10px] text-white/40 font-bold tracking-widest">{park.distance} AWAY</p>
+                              </div>
+                              <div className="flex gap-2">
+                                <button onClick={(e) => { e.stopPropagation(); window.open(`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(`${park.name}, ${selectedCity}, ${selectedState}`)}`, '_blank'); }} 
+                                  className="p-2.5 bg-[#1B254B] text-white/40 rounded-xl hover:bg-red-500 hover:text-white transition-all shadow-sm border border-white/5 group-hover:border-red-500/50" title="Get Directions">
+                                  <MapIcon size={16} />
+                                </button>
+                                <button className={`px-5 py-2.5 rounded-xl text-[10px] font-black transition-all shadow-sm border
+                                  ${selectedParking?.name === park.name ? 'bg-[#05CD99] text-white border-[#05CD99]' : 'bg-[#111C44] text-[#4318FF] border-[#4318FF]/20 hover:bg-[#4318FF] hover:text-white'}`}>
+                                  {selectedParking?.name === park.name ? 'SELECTED' : 'SELECT LOT'}
+                                </button>
+                              </div>
+                            </div>
+                          </motion.div>
+                        ))}
+                      </AnimatePresence>
+                    </div>
+                  </div>
+                </div>
               </motion.div>
             )}
 
@@ -303,11 +450,127 @@ const App = () => {
             )}
 
             {activeSection === 'slots' && (
-              <motion.div key="slots" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="h-full flex flex-col"><div className="flex-1 flex p-6 gap-6 overflow-hidden"><div className="flex-[2] bg-[#13131a] rounded-3xl border border-white/5 p-8 flex flex-col relative overflow-hidden shadow-2xl"><div className="flex justify-between items-center mb-8 relative z-10"><h2 className="text-xl font-bold tracking-wide flex items-center gap-3"><MapIcon className={isLockdown ? "text-red-500" : "text-[#00f0ff]"} /> Sector Alpha <span className="text-white/30 font-mono text-sm tracking-widest">[AX-001]</span></h2><div className="flex items-center gap-2 px-4 py-2 bg-white/5 rounded-full border border-white/10 text-[10px] font-bold uppercase tracking-widest"><div className={`w-2 h-2 rounded-full animate-pulse ${isLockdown ? 'bg-red-500 glow-red' : 'bg-green-500 glow-green'}`}></div>{isLockdown ? 'Lockdown Mode' : 'Monitoring Active'}</div></div><div className={`flex-1 relative flex items-center justify-center border border-white/5 rounded-2xl overflow-hidden transition-colors duration-1000 ${isLockdown ? 'bg-red-500/5' : 'bg-[#0a0a0f]'}`} style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px)', backgroundSize: '40px 40px' }}><div className="grid grid-cols-10 gap-3 p-8" style={{ transform: 'perspective(1200px) rotateX(45deg) scale(1.1)', transformStyle: 'preserve-3d' }}><AnimatePresence>{slots.slice(0, 60).map((slot) => { const isOccupied = isLockdown || slot.status === 'occupied'; return (<motion.div key={slot.id} layout initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1, z: isOccupied ? 15 : 0 }} transition={{ type: 'spring', stiffness: 300, damping: 20 }} className={`w-12 h-20 rounded-md border flex items-center justify-center font-mono text-[10px] relative transition-all duration-700 ${!isOccupied ? 'bg-[#00f0ff]/10 border-[#00f0ff]/40 text-[#00f0ff] shadow-[0_0_15px_rgba(0,240,255,0.2)]' : 'bg-white/5 border-red-500/30 text-red-500/50'} ${isLockdown && 'bg-red-500/20 border-red-500/60 shadow-[0_0_20px_rgba(255,0,0,0.4)]'}`}>{isOccupied && <div className="absolute inset-x-2 top-2 bottom-2 bg-red-500/20 rounded shadow-[0_0_15px_rgba(255,0,0,0.5)] flex items-center justify-center">{isLockdown ? <AlertTriangle size={18} className="text-red-500 animate-pulse" /> : <Car size={18} className="text-red-500 drop-shadow-lg" />}</div>}<span className="absolute bottom-1 opacity-60 font-bold">{slot.id}</span></motion.div>)})}</AnimatePresence></div></div></div><div className="flex-1 flex flex-col gap-6"><div className="bg-[#13131a] rounded-3xl border border-white/5 p-6 flex flex-col h-[60%] shadow-2xl"><h3 className="text-xs font-bold uppercase tracking-widest text-white/40 mb-4 flex items-center gap-2"><Terminal size={14} className={isLockdown ? "text-red-500" : "text-[#00f0ff]"} /> Live OCR Stream</h3><div className="flex-1 bg-black/40 rounded-xl border border-white/5 p-4 font-mono text-[10px] overflow-hidden relative"><div className="absolute inset-0 bg-[linear-gradient(transparent_50%,rgba(0,0,0,0.2)_50%)] bg-[length:100%_4px] pointer-events-none z-10"></div><motion.div animate={{ y: [0, 300, 0] }} transition={{ repeat: Infinity, duration: 4, ease: "linear" }} className={`absolute top-0 left-0 w-full h-[1px] z-10 ${isLockdown ? 'bg-red-500 shadow-[0_0_15px_red]' : 'bg-[#00f0ff] shadow-[0_0_15px_#00f0ff]'}`} /><div className="flex flex-col gap-2 overflow-y-auto h-full pr-2">{logs.map((l, i) => <div key={i} className="flex gap-2 border-b border-white/5 pb-1 opacity-80"><span className="text-[#00f0ff]/50">[{l.time}]</span><span>{l.msg}</span></div>)}</div></div></div><div className="bg-[#13131a] rounded-3xl border border-white/5 p-6 flex flex-col flex-1 shadow-2xl"><h3 className="text-xs font-bold uppercase tracking-widest text-white/40 mb-4">Tactical Controls</h3><div className="grid grid-cols-2 gap-3 h-full"><button onClick={handleVerify} disabled={isVerifying} className="bg-white/5 hover:bg-[#00f0ff]/10 border border-white/10 rounded-2xl flex flex-col items-center justify-center gap-2 transition-all group">{isVerifying ? <Activity size={24} className="text-[#00f0ff] animate-spin" /> : <CheckCircle2 size={24} className="text-[#00f0ff] group-hover:scale-110" />}<span className="text-[10px] font-bold uppercase tracking-wider">{isVerifying ? 'Scanning...' : 'Verify'}</span></button><button onClick={handleLockdown} className={`rounded-2xl flex flex-col items-center justify-center gap-2 transition-all group border ${isLockdown ? 'bg-red-500/20 border-red-500 text-red-500 shadow-[0_0_20px_rgba(255,0,0,0.3)]' : 'bg-white/5 border-white/10 hover:bg-red-500/10 hover:border-red-500/40 text-white/60'}`}><AlertTriangle size={24} className={isLockdown ? 'animate-pulse' : 'group-hover:scale-110'} /><span className="text-[10px] font-bold uppercase tracking-wider">{isLockdown ? 'Unlock' : 'Lockdown'}</span></button></div></div></div></div></motion.div>
+              <motion.div key="slots" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="h-full flex flex-col">
+                {selectedParking ? (
+                  <div className="flex-1 flex p-6 gap-6 overflow-hidden">
+                    <div className="flex-[2] bg-[#13131a] rounded-3xl border border-white/5 p-8 flex flex-col relative overflow-hidden shadow-2xl">
+                      <div className="flex justify-between items-center mb-8 relative z-10">
+                        <h2 className="text-xl font-bold tracking-wide flex items-center gap-3">
+                          <MapIcon className={isLockdown ? "text-red-500" : "text-[#00f0ff]"} /> 
+                          {selectedParking.name} 
+                          <span className="text-white/30 font-mono text-sm tracking-widest">[AX-{(slots.length).toString().padStart(3, '0')}]</span>
+                        </h2>
+                        <div className="flex items-center gap-2 px-4 py-2 bg-white/5 rounded-full border border-white/10 text-[10px] font-bold uppercase tracking-widest">
+                          <div className={`w-2 h-2 rounded-full animate-pulse ${isLockdown ? 'bg-red-500 glow-red' : 'bg-green-500 glow-green'}`}></div>
+                          {isLockdown ? 'Lockdown Mode' : 'Monitoring Active'}
+                        </div>
+                      </div>
+                      <div className={`flex-1 relative flex items-center justify-center border border-white/5 rounded-2xl overflow-hidden transition-colors duration-1000 ${isLockdown ? 'bg-red-500/5' : 'bg-[#0a0a0f]'}`} style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,0.02) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.02) 1px, transparent 1px)', backgroundSize: '40px 40px' }}>
+                        <div className="grid grid-cols-10 gap-3 p-8" style={{ transform: 'perspective(1200px) rotateX(45deg) scale(1.1)', transformStyle: 'preserve-3d' }}>
+                          <AnimatePresence>
+                            {slots.slice(0, 60).map((slot) => { 
+                              const isOccupied = isLockdown || slot.status === 'occupied'; 
+                              return (
+                                <motion.div key={slot.id} layout initial={{ scale: 0.8, opacity: 0 }} animate={{ scale: 1, opacity: 1, z: isOccupied ? 15 : 0 }} transition={{ type: 'spring', stiffness: 300, damping: 20 }} 
+                                  className={`w-12 h-20 rounded-md border flex items-center justify-center font-mono text-[10px] relative transition-all duration-700 ${!isOccupied ? 'bg-[#00f0ff]/10 border-[#00f0ff]/40 text-[#00f0ff] shadow-[0_0_15px_rgba(0,240,255,0.2)]' : 'bg-white/5 border-red-500/30 text-red-500/50'} ${isLockdown && 'bg-red-500/20 border-red-500/60 shadow-[0_0_20px_rgba(255,0,0,0.4)]'}`}>
+                                  {isOccupied && <div className="absolute inset-x-2 top-2 bottom-2 bg-red-500/20 rounded shadow-[0_0_15px_rgba(255,0,0,0.5)] flex items-center justify-center">{isLockdown ? <AlertTriangle size={18} className="text-red-500 animate-pulse" /> : <Car size={18} className="text-red-500 drop-shadow-lg" />}</div>}
+                                  <span className="absolute bottom-1 opacity-60 font-bold">{slot.id}</span>
+                                </motion.div>
+                              )
+                            })}
+                          </AnimatePresence>
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex-1 flex flex-col gap-6">
+                      <div className="bg-[#13131a] rounded-3xl border border-white/5 p-6 flex flex-col h-[60%] shadow-2xl">
+                        <h3 className="text-xs font-bold uppercase tracking-widest text-white/40 mb-4 flex items-center gap-2"><Terminal size={14} className={isLockdown ? "text-red-500" : "text-[#00f0ff]"} /> Live OCR Stream</h3>
+                        <div className="flex-1 bg-black/40 rounded-xl border border-white/5 p-4 font-mono text-[10px] overflow-hidden relative">
+                          <div className="absolute inset-0 bg-[linear-gradient(transparent_50%,rgba(0,0,0,0.2)_50%)] bg-[length:100%_4px] pointer-events-none z-10"></div>
+                          <motion.div animate={{ y: [0, 300, 0] }} transition={{ repeat: Infinity, duration: 4, ease: "linear" }} className={`absolute top-0 left-0 w-full h-[1px] z-10 ${isLockdown ? 'bg-red-500 shadow-[0_0_15px_red]' : 'bg-[#00f0ff] shadow-[0_0_15px_#00f0ff]'}`} />
+                          <div className="flex flex-col gap-2 overflow-y-auto h-full pr-2">
+                            {logs.map((l, i) => <div key={i} className="flex gap-2 border-b border-white/5 pb-1 opacity-80"><span className="text-[#00f0ff]/50">[{l.time}]</span><span>{l.msg}</span></div>)}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="bg-[#13131a] rounded-3xl border border-white/5 p-6 flex flex-col flex-1 shadow-2xl">
+                        <h3 className="text-xs font-bold uppercase tracking-widest text-white/40 mb-4">Tactical Controls</h3>
+                        <div className="grid grid-cols-2 gap-3 h-full">
+                          <button onClick={handleVerify} disabled={isVerifying} className="bg-white/5 hover:bg-[#00f0ff]/10 border border-white/10 rounded-2xl flex flex-col items-center justify-center gap-2 transition-all group">
+                            {isVerifying ? <Activity size={24} className="text-[#00f0ff] animate-spin" /> : <CheckCircle2 size={24} className="text-[#00f0ff] group-hover:scale-110" />}
+                            <span className="text-[10px] font-bold uppercase tracking-wider">{isVerifying ? 'Scanning...' : 'Verify'}</span>
+                          </button>
+                          <button onClick={handleLockdown} className={`rounded-2xl flex flex-col items-center justify-center gap-2 transition-all group border ${isLockdown ? 'bg-red-500/20 border-red-500 text-red-500 shadow-[0_0_20px_rgba(255,0,0,0.3)]' : 'bg-white/5 border-white/10 hover:bg-red-500/10 hover:border-red-500/40 text-white/60'}`}>
+                            <AlertTriangle size={24} className={isLockdown ? 'animate-pulse' : 'group-hover:scale-110'} />
+                            <span className="text-[10px] font-bold uppercase tracking-wider">{isLockdown ? 'Unlock' : 'Lockdown'}</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="flex-1 flex flex-col items-center justify-center text-center p-20 gap-6">
+                    <div className="w-24 h-24 bg-[#00f0ff]/10 rounded-3xl flex items-center justify-center text-[#00f0ff] shadow-[0_0_50px_rgba(0,240,255,0.1)] animate-pulse">
+                      <MapIcon size={48} />
+                    </div>
+                    <div>
+                      <h2 className="text-3xl font-black text-white">Live Map Unavailable</h2>
+                      <p className="text-white/40 font-medium max-w-lg mt-2 mx-auto">Please select a specific parking location from the Dashboard explorer to initialize the tactical sector map and live OCR streams.</p>
+                    </div>
+                    <button onClick={() => setActiveSection('dashboard')} className="mt-4 px-8 py-4 bg-[#00f0ff] text-black font-black rounded-2xl hover:scale-105 transition-all shadow-[0_0_20px_rgba(0,240,255,0.3)]">GO TO EXPLORER</button>
+                  </div>
+                )}
+              </motion.div>
             )}
 
             {activeSection === 'reservations' && (
-              <motion.div key="reservations" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="flex flex-col gap-8"><div className="flex justify-between items-center"><h2 className="text-2xl font-bold text-white">Advanced Reservation System</h2><button onClick={() => setShowBookingModal(true)} className="flex items-center gap-2 bg-[#4318FF] text-white px-6 py-3 rounded-2xl shadow-lg shadow-[#4318FF]/30 hover:scale-105 transition-all font-bold"><Plus size={20}/> New Booking</button></div><div className="grid grid-cols-1 md:grid-cols-3 gap-8"><div className="bg-gradient-to-br from-[#4318FF] to-[#7551FF] p-8 rounded-3xl text-white shadow-xl flex flex-col gap-6 relative overflow-hidden"><div className="absolute top-0 right-0 w-48 h-48 bg-white/10 rounded-full -mr-20 -mt-20 blur-3xl"></div><h3 className="text-xl font-bold border-b border-white/20 pb-4">Standard Pricing</h3><div className="flex flex-col gap-4"><div className="flex justify-between items-center"><span>Hourly Rate</span><span className="text-2xl font-black font-mono">₹25/hr</span></div><div className="flex justify-between items-center"><span>Pre-Booking Fee</span><span className="font-bold">Varies by time</span></div><div className="flex justify-between items-center bg-white/10 p-3 rounded-xl"><span className="text-sm">Grace Period</span><span className="font-bold">30 Mins</span></div></div><div className="mt-auto bg-red-500/20 border border-red-400/30 p-4 rounded-2xl flex items-start gap-3"><AlertTriangle className="shrink-0" size={18} /><p className="text-xs leading-relaxed"><strong>Overstay Penalty:</strong> Exceeding grace period incurs a flat <strong>₹1000 fine</strong> plus standard hourly charges.</p></div></div><div className="md:col-span-2 bg-[#111C44] p-8 rounded-3xl shadow-sm border border-white/5 overflow-hidden"><h3 className="font-bold text-lg text-white mb-6">Available Slots</h3><div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-3 max-h-[400px] overflow-y-auto pr-2">{slots.slice(0, 80).map((s) => <div key={s.id} onClick={() => s.status === 'available' && (setNewBooking({...newBooking, slot: s.id}), setShowBookingModal(true))} className={`p-3 rounded-xl border flex flex-col items-center gap-1 cursor-pointer transition-all hover:scale-105 ${s.status === 'available' ? 'bg-[#05CD99]/10 border-[#05CD99]/20 text-[#05CD99]' : s.status === 'occupied' ? 'bg-indigo-500/10 border-indigo-500/20 text-indigo-500 opacity-50' : 'bg-amber-500/10 border-amber-500/20 text-amber-500'}`}><Car size={14} /><span className="text-[10px] font-black">{s.id}</span></div>)}</div></div></div></motion.div>
+              <motion.div key="reservations" initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} className="flex flex-col gap-8">
+                {selectedParking ? (
+                  <>
+                    <div className="flex justify-between items-center">
+                      <h2 className="text-2xl font-bold text-white">Advanced Reservation System - {selectedParking.name}</h2>
+                      <button onClick={() => setShowBookingModal(true)} className="flex items-center gap-2 bg-[#4318FF] text-white px-6 py-3 rounded-2xl shadow-lg shadow-[#4318FF]/30 hover:scale-105 transition-all font-bold"><Plus size={20}/> New Booking</button>
+                    </div>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+                      <div className="bg-gradient-to-br from-[#4318FF] to-[#7551FF] p-8 rounded-3xl text-white shadow-xl flex flex-col gap-6 relative overflow-hidden">
+                        <div className="absolute top-0 right-0 w-48 h-48 bg-white/10 rounded-full -mr-20 -mt-20 blur-3xl"></div>
+                        <h3 className="text-xl font-bold border-b border-white/20 pb-4">Standard Pricing</h3>
+                        <div className="flex flex-col gap-4">
+                          <div className="flex justify-between items-center"><span>Hourly Rate</span><span className="text-2xl font-black font-mono">₹25/hr</span></div>
+                          <div className="flex justify-between items-center"><span>Pre-Booking Fee</span><span className="font-bold">Varies by time</span></div>
+                          <div className="flex justify-between items-center bg-white/10 p-3 rounded-xl"><span className="text-sm">Grace Period</span><span className="font-bold">30 Mins</span></div>
+                        </div>
+                        <div className="mt-auto bg-red-500/20 border border-red-400/30 p-4 rounded-2xl flex items-start gap-3">
+                          <AlertTriangle className="shrink-0" size={18} />
+                          <p className="text-xs leading-relaxed"><strong>Overstay Penalty:</strong> Exceeding grace period incurs a flat <strong>₹1000 fine</strong> plus standard hourly charges.</p>
+                        </div>
+                      </div>
+                      <div className="md:col-span-2 bg-[#111C44] p-8 rounded-3xl shadow-sm border border-white/5 overflow-hidden">
+                        <h3 className="font-bold text-lg text-white mb-6">Available Slots at {selectedParking.name}</h3>
+                        <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 gap-3 max-h-[400px] overflow-y-auto pr-2">
+                          {slots.slice(0, 80).map((s) => (
+                            <div key={s.id} onClick={() => s.status === 'available' && (setNewBooking({...newBooking, slot: s.id}), setShowBookingModal(true))} 
+                              className={`p-3 rounded-xl border flex flex-col items-center gap-1 cursor-pointer transition-all hover:scale-105 ${s.status === 'available' ? 'bg-[#05CD99]/10 border-[#05CD99]/20 text-[#05CD99]' : s.status === 'occupied' ? 'bg-indigo-500/10 border-indigo-500/20 text-indigo-500 opacity-50' : 'bg-amber-500/10 border-amber-500/20 text-amber-500'}`}>
+                              <Car size={14} /><span className="text-[10px] font-black">{s.id}</span>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <div className="flex-1 flex flex-col items-center justify-center text-center p-20 gap-6">
+                    <div className="w-24 h-24 bg-[#4318FF]/10 rounded-3xl flex items-center justify-center text-[#4318FF] shadow-[0_0_50px_rgba(67,24,255,0.1)]">
+                      <Calendar size={48} />
+                    </div>
+                    <div>
+                      <h2 className="text-3xl font-black text-white">Reservation System Inactive</h2>
+                      <p className="text-white/40 font-medium max-w-lg mt-2 mx-auto">Please select a parking location from the Dashboard explorer to enable pre-booking, view localized pricing, and access the slot allocation engine.</p>
+                    </div>
+                    <button onClick={() => setActiveSection('dashboard')} className="mt-4 px-8 py-4 bg-[#4318FF] text-white font-black rounded-2xl hover:scale-105 transition-all shadow-[0_0_20px_rgba(67,24,255,0.3)]">GO TO EXPLORER</button>
+                  </div>
+                )}
+              </motion.div>
             )}
           </AnimatePresence>
 
