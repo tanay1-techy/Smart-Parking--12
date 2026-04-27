@@ -223,11 +223,10 @@ const App = () => {
 
       <aside className={`w-[260px] flex flex-col py-8 shadow-2xl z-30 transition-colors duration-500 ${activeSection === 'slots' ? 'bg-[#13131a] border-r border-white/5' : 'bg-[#0B1739] text-white'}`}>
         <div className="px-8 mb-10 flex flex-col items-center">
-           <div className={`w-20 h-20 mb-2 transition-all duration-500 flex items-center justify-center overflow-hidden rounded-2xl ${activeSection === 'slots' ? (isLockdown ? 'shadow-[0_0_20px_rgba(255,0,0,0.5)] bg-red-500/10' : 'shadow-[0_0_20px_rgba(0,240,255,0.4)] bg-[#00f0ff]/5') : ''}`}>
-              <img src={logo} className="w-full h-full object-contain" alt="Logo" />
-           </div>
-           <h1 className="text-xl font-black text-center leading-tight">SMART PARKING<br/><span className={activeSection === 'slots' ? "text-[#00f0ff]" : "text-[#05CD99]"}>SYSTEM</span></h1>
-           <p className="text-white/40 text-[9px] mt-2 font-bold uppercase tracking-[3px] text-center">Premium Hub</p>
+            <div className={`w-32 h-32 mb-4 transition-all duration-500 flex items-center justify-center overflow-hidden rounded-2xl ${activeSection === 'slots' ? (isLockdown ? 'shadow-[0_0_20px_rgba(255,0,0,0.5)] bg-red-500/10' : 'shadow-[0_0_20px_rgba(0,240,255,0.4)] bg-[#00f0ff]/5') : ''}`}>
+              <img src={logo} className="w-full h-full object-contain scale-150" alt="Logo" />
+            </div>
+            <p className="text-white/40 text-[9px] font-bold uppercase tracking-[3px] text-center">Premium Hub</p>
         </div>
         <nav className="flex-1 px-4 flex flex-col gap-1">
           {[ { id: 'dashboard', icon: LayoutDashboard, label: 'Dashboard' }, { id: 'slots', icon: MapIcon, label: 'Live Map' }, { id: 'reservations', icon: Calendar, label: 'Reservations' }, { id: 'payments', icon: CreditCard, label: 'Payments' }, { id: 'users', icon: Users, label: 'Users' }, { id: 'reports', icon: FileText, label: 'Reports' } ].map((item) => (
@@ -741,7 +740,6 @@ const App = () => {
                         <div className="flex flex-col items-center">
                            <div className="w-16 h-16 bg-[#4318FF]/10 rounded-2xl flex items-center justify-center text-[#4318FF] mb-4"><img src={logo} className="w-full h-full object-contain" alt="Logo" /></div>
                            <h3 className="text-xl font-black text-white">Payment Receipt</h3>
-                           <p className="text-[10px] font-bold text-white/40 uppercase tracking-widest mt-1">Smart Parking System</p>
                         </div>
                      </div>
                      <div className="p-8 flex flex-col gap-4">
