@@ -482,6 +482,8 @@ const App = () => {
   
   const availableParkingLots = INDIA_PARKING_DATA[selectedState][selectedCity] || [];
 
+
+
   useEffect(() => {
     if (isLockdown) return;
     const interval = setInterval(() => {
@@ -616,6 +618,26 @@ const App = () => {
   }, [autoAlertsEnabled, reservations, notifiedReservations]);
   
   const confirmBooking = () => { 
+    // Security check: Duplicate vehicle parking
+    const normalizedNewVehicle = newBooking.vehicle.replace(/[^a-zA-Z0-9]/g, '').toLowerCase();
+    const isDuplicateRes = reservations.some(r => r.vehicle.replace(/[^a-zA-Z0-9]/g, '').toLowerCase() === normalizedNewVehicle && r.status === 'Confirmed');
+    const isDuplicateAct = RECENT_ACTIVITY.some(act => act.vehicle.replace(/[^a-zA-Z0-9]/g, '').toLowerCase() === normalizedNewVehicle && act.expiryTime > Date.now());
+    
+    if (isDuplicateRes || isDuplicateAct) {
+      if (userRole === 'admin') {
+        setNotification(`🚨 CRITICAL SECURITY ALERT: Vehicle ${newBooking.vehicle} is already parked/booked elsewhere! Local Police Station has been notified immediately!`);
+        // Alert sound only for admin
+        const audio = new Audio('https://assets.mixkit.co/active_storage/sfx/2869/2869-preview.mp3');
+        audio.play().catch(e => console.log("Audio blocked"));
+      } else {
+        setNotification(`⚠️ Booking Failed: Vehicle ${newBooking.vehicle} is already registered at another slot. Please verify the number.`);
+      }
+      setTimeout(() => setNotification(null), 8000);
+      setShowBookingModal(false);
+      setBookingStep(1);
+      return;
+    }
+
     const start = new Date(newBooking.startTime);
     const end = new Date(start.getTime() + newBooking.duration * 3600000); // duration in hours
     
